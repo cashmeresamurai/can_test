@@ -1,0 +1,53 @@
+{ pkgs, ... }:
+
+{
+  # Enable devenv shell features
+  packages = with pkgs; [
+    python3
+    python3Packages.numpy
+    python3Packages.pandas
+    python3Packages.polars
+    python3Packages.openpyxl
+    python3Packages.matplotlib
+    python3Packages.seaborn
+    python3Packages.result
+    python3Packages.xlsxwriter
+    python3Packages.pytz
+    python3Packages.tkinter
+    stdenv.cc.cc.lib
+    pyright
+    lazygit
+    ripgrep
+  ];
+
+  languages.javascript.enable = true;
+  languages.python = {
+    enable = true;
+    version = "3.11";
+    venv = {
+      enable = true;
+      requirements = ''
+        numpy
+        matplotlib
+        python-power-bi
+        seaborn
+        pandas
+        polars
+        result
+        openpyxl
+        xlsxwriter
+        pytz
+        pandasgui
+        tkinter
+      '';
+    };
+  };
+
+  # Set environment variables
+  env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH";
+
+  # Enter the environment
+  enterShell = ''
+    echo "Python environment ready!"
+  '';
+}
