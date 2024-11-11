@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center">
+  <div class="prose text-center">
+    <h1>USB-CAN Tester</h1>
+    <button class="btn" hx-get="/start-scan" hx-swap="innerHTML" hx-target="#scan-result">Start Scan</button>
+    <div id="scan-result"></div>
+    <div class="flex gap-16 p-4 justify-center">
+      <select class="select select-lg max-w-xs">
+        <option disabled selected>Choose your USB CAN device</option>
+        <option>USB CAN 1</option>
+        <option>USB CAN 2</option>
+        <option>USB CAN 3</option>
+      </select>
+      <select class="select max-w-xs" disabled>
+        <option>No devices available</option>
+      </select>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,46 @@
+{% if has_error %}
+<div class="error-message">
+    {{ error_message }}
+</div>
+{% else %}
+    {% if devices %}
+    <div class="devices-container">
+        {% for port, info in devices.items() %}
+            <div class="device-card">
+                {% if 'error' in info %}
+                <div class="device-error">
+                    <h3>Fehler bei {{ port }}</h3>
+                    <p>{{ info.error }}</p>
+                </div>
+                {% else %}
+                <div class="device-info">
+                    <h3>VSCAN Gerät gefunden</h3>
+                    <table>
+                        <tr>
+                            <td>Port:</td>
+                            <td>{{ info.port }}</td>
+                        </tr>
+                        <tr>
+                            <td>Seriennummer:</td>
+                            <td>{{ info.serial_number }}</td>
+                        </tr>
+                        <tr>
+                            <td>Firmware:</td>
+                            <td>{{ info.firmware }}</td>
+                        </tr>
+                        <tr>
+                            <td>Hardware:</td>
+                            <td>{{ info.hardware }}</td>
+                        </tr>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-devices">
+        Keine Geräte gefunden
+    </div>
+    {% endif %}
+{% endif %}

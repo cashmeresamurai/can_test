@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta name="title" content="" />
+  <meta name="description" content="" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{page_title}}</title>
+  <link rel="stylesheet" type="text/css" href="/static/output.css">
+  <!-- <link rel="stylesheet" type="text/css" href="/static/fonts.css"> -->
+  <script src="/static/htmx.min.js"></script>
+  {% block head %}{% endblock %}
+
+
+</head>
+
+<body class="bg-base-100 font-inter" hx-target="this">
+  {% block content %}
+  {% endblock %}
+</body>
+
+</html>
