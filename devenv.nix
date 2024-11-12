@@ -19,6 +19,7 @@
     python3Packages.pygobject3
     python3Packages.pycairo
     python3Packages.tkinter
+    python3Packages.result
     tk
     glib
     gvfs
@@ -42,6 +43,7 @@
       uvicorn
       pygobject
       pycairo
+      result
       '';
     };
   };

@@ -45,7 +45,7 @@ async def start_scan(request: Request):
 def run_initialize_with_sudo():
     try:
         # Setze die Berechtigungen für den seriellen Port
-        subprocess.run(['sudo', 'chmod', '666', '/dev/ttyUSB0'], check=True)
+        # subprocess.run(['sudo', 'chmod', '666', '/dev/ttyUSB0'], check=True)
 
         # Hole den Pfad zum aktuellen Python-Interpreter und Arbeitsverzeichnis
         current_dir = os.getcwd()
