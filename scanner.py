@@ -418,81 +418,105 @@ def send_can_frames(port, bitrate, mode):
             time.sleep(0.5)
 
 
-def initialize():
+from result import Result, Ok, Err
+from typing import Dict, Any, List
+
+def initialize() -> Result[Dict[str, Any], str]:
     """Main routine."""
-    try:
-        # Execute default behavior
-        port_list = find_all_usb_can_devices()
-        devices_info = {}
+    port_list_result = find_all_usb_can_devices()
 
-        if not port_list:
-            devices_info['error'] = "No USB-CAN devices found"
-            if sys.platform.startswith('linux'):
-                get_system_info()
-        else:
-            for item in port_list:
-                device_info = process_device(item)
-                if device_info:
-                    # Konvertiere item zu String
-                    devices_info[str(item)] = device_info
+    if not isinstance(port_list_result, Ok):
+        return Err("Failed to find USB-CAN devices")
 
-        return devices_info
-    except Exception as e:
-        return {"error": f"Error during initialization: {str(e)}"}
-
-
-def process_device(item):
-    """Process a single USB-CAN device."""
-    try:
-        usbcan = UsbCan(item)
-        device_info = {
-            'port': str(item),
-            'status': 'initializing'
-        }
-
+    port_list = port_list_result.ok_value
+    if not port_list:
         if sys.platform.startswith('linux'):
-            find_port(usbcan.port)
-            usbcan.lsof()
+            get_system_info()
+        return Ok({"status": "empty", "message": "No USB-CAN devices found"})
 
-        if not usbcan.init_serial_port():
-            device_info['error'] = "Failed to open serial port"
-            return device_info
+    devices_info = {}
+    for item in port_list:
+        device_result = process_device(item)
+        match device_result:
+            case Ok(info):
+                devices_info[str(item)] = info
+            case Err(error):
+                devices_info[str(item)] = {
+                    'port': str(item),
+                    'status': 'error',
+                    'error': error
+                }
 
-        if not usbcan.close_can_channel():
-            device_info['error'] = "Failed to close the CAN channel"
-            return device_info
+    return Ok(devices_info)
 
-        ser_num = usbcan.get_serial_number()
-        if not ser_num:
-            device_info['error'] = "Failed to get the serial number"
-            return device_info
+def process_device(item) -> Result[Dict[str, Any], str]:
+    """Process a single USB-CAN device."""
+    device_info = {
+        'port': str(item),
+        'status': 'initializing'
+    }
 
-        ver = usbcan.get_version_info()
-        if not ver:
-            device_info['error'] = "Failed to get the firmware version"
-            return device_info
+    # Erstelle UsbCan Objekt
+    usbcan = UsbCan(item)
 
+    # Linux-spezifische Checks
+    if sys.platform.startswith('linux'):
+        port_result = find_port(usbcan.port)
+        if isinstance(port_result, Err):
+            return Err(f"Port detection failed: {port_result.err_value}")
+
+        lsof_result = usbcan.lsof()
+        if isinstance(lsof_result, Err):
+            return Err(f"LSOF check failed: {lsof_result.err_value}")
+
+    # Initialisiere seriellen Port
+    init_result = usbcan.init_serial_port()
+    if not init_result:
+        return Err("Failed to open serial port")
+
+    # Schließe CAN Channel
+    close_result = usbcan.close_can_channel()
+    if not close_result:
+        return Err("Failed to close the CAN channel")
+
+    # Hole Seriennummer
+    ser_num = usbcan.get_serial_number()
+    if not ser_num:
+        return Err("Failed to get the serial number")
+
+    # Hole Versionsinformationen
+    ver = usbcan.get_version_info()
+    if not ver:
+        return Err("Failed to get the firmware version")
+
+    # Parse Version
+    try:
         ver_major = int(ver[2:3], 16)
         ver_minor = int(ver[3:], 16)
         hw_major = int(ver[:1], 16)
         hw_minor = int(ver[1:2], 16)
+    except (ValueError, IndexError):
+        return Err("Failed to parse version information")
 
-        device_info.update({
-            'serial_number': ser_num.decode('ascii'),
-            'firmware': f"{ver_major}:{ver_minor}",
-            'hardware': f"{hw_major}:{hw_minor}",
-            'status': 'success'
-        })
+    # Erstelle erfolgreiche Geräteinformation
+    device_info.update({
+        'serial_number': ser_num.decode('ascii'),
+        'firmware': f"{ver_major}:{ver_minor}",
+        'hardware': f"{hw_major}:{hw_minor}",
+        'status': 'success'
+    })
 
-        usbcan.close()
-        return device_info
+    usbcan.close()
+    return Ok(device_info)
 
+# Hilfsfunktion für das Finden von USB-CAN Geräten
+def find_all_usb_can_devices() -> Result[List[str], str]:
+    """Find all USB-CAN devices and return as Result."""
+    try:
+        devices = original_find_all_usb_can_devices()  # Die ursprüngliche Funktion
+        return Ok(devices)
     except Exception as e:
-        return {
-            'port': str(item),
-            'error': str(e),
-            'status': 'error'
-        }
+        return Err(f"Failed to find USB-CAN devices: {str(e)}")
 
 
 if __name__ == "__main__":
