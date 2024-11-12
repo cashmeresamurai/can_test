@@ -5,6 +5,8 @@
 CAN device tester.
 """
 
+from typing import Dict, Any, List
+from result import Result, Ok, Err
 import argparse
 import os.path
 import queue
@@ -217,7 +219,7 @@ class UsbCan(object):
         return buf[1:len(buf) - 1]
 
 
-def find_all_usb_can_devices():
+def original_find_all_usb_can_devices():
     """Find all serial ports with FT-X chip."""
     port_list = []
     ports = serial.tools.list_ports.grep("0403:6015")
@@ -418,21 +420,18 @@ def send_can_frames(port, bitrate, mode):
             time.sleep(0.5)
 
 
-from result import Result, Ok, Err
-from typing import Dict, Any, List
-
-def initialize() -> Result[Dict[str, Any], str]:
+def initialize() -> Dict[str, Any]:
     """Main routine."""
     port_list_result = find_all_usb_can_devices()
 
     if not isinstance(port_list_result, Ok):
-        return Err("Failed to find USB-CAN devices")
+        return {"status": "error", "error": "Failed to find USB-CAN devices"}
 
     port_list = port_list_result.ok_value
     if not port_list:
         if sys.platform.startswith('linux'):
             get_system_info()
-        return Ok({"status": "empty", "message": "No USB-CAN devices found"})
+        return {"status": "empty", "message": "No USB-CAN devices found"}
 
     devices_info = {}
     for item in port_list:
@@ -444,10 +443,11 @@ def initialize() -> Result[Dict[str, Any], str]:
                 devices_info[str(item)] = {
                     'port': str(item),
                     'status': 'error',
-                    'error': error
+                    'error': str(error)
                 }
 
-    return Ok(devices_info)
+    return {"status": "success", "devices": devices_info}
+
 
 def process_device(item) -> Result[Dict[str, Any], str]:
     """Process a single USB-CAN device."""
@@ -456,10 +456,8 @@ def process_device(item) -> Result[Dict[str, Any], str]:
         'status': 'initializing'
     }
 
-    # Erstelle UsbCan Objekt
     usbcan = UsbCan(item)
 
-    # Linux-spezifische Checks
     if sys.platform.startswith('linux'):
         port_result = find_port(usbcan.port)
         if isinstance(port_result, Err):
@@ -469,27 +467,22 @@ def process_device(item) -> Result[Dict[str, Any], str]:
         if isinstance(lsof_result, Err):
             return Err(f"LSOF check failed: {lsof_result.err_value}")
 
-    # Initialisiere seriellen Port
     init_result = usbcan.init_serial_port()
     if not init_result:
         return Err("Failed to open serial port")
 
-    # Schließe CAN Channel
     close_result = usbcan.close_can_channel()
     if not close_result:
         return Err("Failed to close the CAN channel")
 
-    # Hole Seriennummer
     ser_num = usbcan.get_serial_number()
     if not ser_num:
         return Err("Failed to get the serial number")
 
-    # Hole Versionsinformationen
     ver = usbcan.get_version_info()
     if not ver:
         return Err("Failed to get the firmware version")
 
-    # Parse Version
     try:
         ver_major = int(ver[2:3], 16)
         ver_minor = int(ver[3:], 16)
@@ -498,7 +491,6 @@ def process_device(item) -> Result[Dict[str, Any], str]:
     except (ValueError, IndexError):
         return Err("Failed to parse version information")
 
-    # Erstelle erfolgreiche Geräteinformation
     device_info.update({
         'serial_number': ser_num.decode('ascii'),
         'firmware': f"{ver_major}:{ver_minor}",
@@ -509,14 +501,16 @@ def process_device(item) -> Result[Dict[str, Any], str]:
     usbcan.close()
     return Ok(device_info)
 
-# Hilfsfunktion für das Finden von USB-CAN Geräten
+
 def find_all_usb_can_devices() -> Result[List[str], str]:
     """Find all USB-CAN devices and return as Result."""
     try:
-        devices = original_find_all_usb_can_devices()  # Die ursprüngliche Funktion
-        return Ok(devices)
+        devices = original_find_all_usb_can_devices()
+        return Ok(devices) if devices is not None else Err("No devices found")
     except Exception as e:
         return Err(f"Failed to find USB-CAN devices: {str(e)}")
+
+# Hilfsfunktion für das Finden von USB-CAN Geräten
 
 
 if __name__ == "__main__":

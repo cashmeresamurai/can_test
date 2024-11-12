@@ -23,20 +23,15 @@ def index(request: Request):
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
     try:
-        # Führe initialize mit sudo aus
         result = run_initialize_with_sudo()
-
-        # Bereite Kontext für das Template vor
-        context = {
-            "request": request,
-            "devices": result,
-            "has_error": "error" in result,
-            "error_message": result.get("error", None)
-        }
-
         return templates.TemplateResponse(
             "components/start_scan.html",
-            context
+            {
+                "request": request,
+                "devices": result.get("devices", {}),
+                "status": result.get("status", "error"),
+                "error": result.get("error")
+            }
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
