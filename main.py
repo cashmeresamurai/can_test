@@ -7,6 +7,9 @@ import subprocess
 import json
 import sys  # sys Modul importieren
 import os
+import threading
+from threading import Event
+from receive import receive_can_frames
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -15,15 +18,65 @@ components = Jinja2Templates(directory="templates/components")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+# Globale Variable für das Stop-Event und den Thread
+receive_stop_event = None
+receive_thread = None
+
+
 @app.post("/receive-bytes")
 async def receive_bytes(request: Request):
+    global receive_stop_event, receive_thread
+
     data = await request.form()
     device = data.get('receive-device')
-    print(f"receive bytes for device: {device}")
-    # Hier die Logik für den Empfang implementieren
+
+    if receive_thread and receive_thread.is_alive():
+        return {
+            "success": False,
+            "message": "Empfang läuft bereits"
+        }
+
+    receive_stop_event = Event()
+    receive_thread = threading.Thread(
+        target=receive_can_frames,
+        args=(device, 100000, receive_stop_event)
+    )
+    receive_thread.start()
+
+    # HTMX Response für Button-Updates
+    return """
+    <button class="btn btn-primary flex-1" disabled
+            hx-post="/receive-bytes"
+            hx-include="[name='receive-device']"
+            hx-swap="none">
+        Empfange...
+    </button>
+    """
+
+
+@app.post("/stop-receive")
+async def stop_receive():
+    global receive_stop_event, receive_thread
+
+    if receive_stop_event and receive_thread:
+        receive_stop_event.set()
+        receive_thread.join()
+        receive_stop_event = None
+        receive_thread = None
+
+        # HTMX Response für Button-Reset
+        return """
+        <button class="btn btn-primary flex-1"
+                hx-post="/receive-bytes"
+                hx-include="[name='receive-device']"
+                hx-swap="none">
+            Start Empfangen
+        </button>
+        """
+
     return {
-        "success": True,
-        "message": f"Empfange auf {device}"
+        "success": False,
+        "message": "Kein aktiver Empfang"
     }
 
 

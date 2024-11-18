@@ -128,17 +128,23 @@
       <div class="card-body">
         <h3 class="card-title text-primary">Bytes Empfangen</h3>
         <div class="space-y-4">
-          <select class="select select-primary w-full" id="receive-device" name="receive-device">
+          <select class="select select-primary w-full" name="receive-device">
             <option disabled selected>Gerät auswählen</option>
             {% for port, info in devices.items() %}
             <option value="{{ info.port }}">{{ info.port }}</option>
             {% endfor %}
           </select>
 
-          <button class="btn btn-primary w-full" hx-post="/receive-bytes" hx-include="[name='receive-device']"
-            hx-swap="none">
-            Start Empfangen
-          </button>
+          <div class="flex gap-4">
+            <button class="btn btn-primary flex-1" hx-post="/receive-bytes" hx-include="[name='receive-device']"
+              hx-swap="none">
+              Start Empfangen
+            </button>
+
+            <button class="btn btn-error flex-1" hx-post="/stop-receive" hx-swap="none">
+              Stop
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -162,7 +168,5 @@
       </div>
     </div>
   </div>
-</div>
-</div>
 </div>
 {% endif %}
