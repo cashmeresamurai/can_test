@@ -19,7 +19,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def receive_bytes(request: Request):
     data = await request.form()
     device = data.get('receive-device')
-
+    print(f"receive bytes for device: {device}")
     # Hier die Logik für den Empfang implementieren
     return {
         "success": True,
@@ -31,6 +31,8 @@ async def receive_bytes(request: Request):
 async def send_bytes(request: Request):
     data = await request.form()
     device = data.get('send-device')
+
+    print(f"send bytes from device: {device}")
 
     # Hier die Logik für das Senden implementieren
     return {

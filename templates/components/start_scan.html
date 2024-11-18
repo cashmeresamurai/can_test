@@ -119,40 +119,23 @@
 </div>
 {% endif %}
 {% endif %}
-
-<div class="flex gap-16 p-4 justify-center">
-  <select class="select select-lg max-w-xs">
-    <option disabled selected>Choose your USB CAN device</option>
-    {% if devices %}
-    {% for port, info in devices.items() %}
-    {% if 'error' not in info %}
-    <option value="{{ info.port }}">{{ info.port }} - SN: {{ info.serial_number }}</option>
-    {% endif %}
-    {% endfor %}
-    {% else %}
-    <option disabled>No devices available</option>
-    {% endif %}
-  </select>
-  <select class="select max-w-xs" disabled>
-    <option>No devices available</option>
-  </select>
-</div>
 <!-- Fügen Sie dies nach der Geräteliste hinzu -->
 {% if devices and not has_error %}
 <div class="max-w-4xl mx-auto mt-8">
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8"><!-- Empfangen -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Empfangen -->
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
         <h3 class="card-title text-primary">Bytes Empfangen</h3>
         <div class="space-y-4">
-          <select class="select select-primary w-full" id="receive-device">
+          <select class="select select-primary w-full" id="receive-device" name="receive-device">
             <option disabled selected>Gerät auswählen</option>
             {% for port, info in devices.items() %}
             <option value="{{ info.port }}">{{ info.port }}</option>
             {% endfor %}
           </select>
 
-          <button class="btn btn-primary w-full" hx-post="/receive-bytes" hx-include="[id='receive-device']"
+          <button class="btn btn-primary w-full" hx-post="/receive-bytes" hx-include="[name='receive-device']"
             hx-swap="none">
             Start Empfangen
           </button>
@@ -165,20 +148,21 @@
       <div class="card-body">
         <h3 class="card-title text-primary">Bytes Senden</h3>
         <div class="space-y-4">
-          <select class="select select-primary w-full" id="send-device">
+          <select class="select select-primary w-full" id="send-device" name="send-device">
             <option disabled selected>Gerät auswählen</option>
             {% for port, info in devices.items() %}
             <option value="{{ info.port }}">{{ info.port }}</option>
             {% endfor %}
           </select>
 
-          <button class="btn btn-primary w-full" hx-post="/send-bytes" hx-include="[id='send-device']" hx-swap="none">
+          <button class="btn btn-primary w-full" hx-post="/send-bytes" hx-include="[name='send-device']" hx-swap="none">
             Start Senden
           </button>
         </div>
       </div>
     </div>
   </div>
+</div>
 </div>
 </div>
 {% endif %}
