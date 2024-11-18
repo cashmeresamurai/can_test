@@ -44,6 +44,7 @@
       pygobject
       pycairo
       result
+      python-multipart
       '';
     };
   };

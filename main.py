@@ -15,6 +15,30 @@ components = Jinja2Templates(directory="templates/components")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+@app.post("/receive-bytes")
+async def receive_bytes(request: Request):
+    data = await request.form()
+    device = data.get('receive-device')
+
+    # Hier die Logik für den Empfang implementieren
+    return {
+        "success": True,
+        "message": f"Empfange auf {device}"
+    }
+
+
+@app.post("/send-bytes")
+async def send_bytes(request: Request):
+    data = await request.form()
+    device = data.get('send-device')
+
+    # Hier die Logik für das Senden implementieren
+    return {
+        "success": True,
+        "message": f"Sende auf {device}"
+    }
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
