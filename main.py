@@ -9,6 +9,7 @@ import sys  # sys Modul importieren
 import os
 import threading
 from threading import Event
+from send import send_can_frames
 from receive import receive_can_frames
 
 app = FastAPI()
@@ -21,6 +22,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Globale Variable für das Stop-Event und den Thread
 receive_stop_event = None
 receive_thread = None
+send_stop_event = None
+send_thread = None
 
 
 @app.post("/receive-bytes")
@@ -82,15 +85,58 @@ async def stop_receive():
 
 @app.post("/send-bytes")
 async def send_bytes(request: Request):
+    global send_stop_event, send_thread
+
     data = await request.form()
     device = data.get('send-device')
 
-    print(f"send bytes from device: {device}")
+    if send_thread and send_thread.is_alive():
+        return {
+            "success": False,
+            "message": "Senden läuft bereits"
+        }
 
-    # Hier die Logik für das Senden implementieren
+    send_stop_event = Event()
+    send_thread = threading.Thread(
+        target=send_can_frames,
+        args=(device, 100000, send_stop_event)
+    )
+    send_thread.start()
+
+    # HTMX Response für Button-Update
+    return """
+    <button class="btn btn-primary flex-1" disabled
+            hx-post="/send-bytes"
+            hx-include="[name='send-device']"
+            hx-swap="none">
+        Sende...
+    </button>
+    """
+
+
+@app.post("/stop-send")
+async def stop_send():
+    global send_stop_event, send_thread
+
+    if send_stop_event and send_thread:
+        send_stop_event.set()
+        send_thread.join()
+        send_stop_event = None
+        send_thread = None
+
+        # HTMX Response für Button-Reset
+        return """
+        <button class="btn btn-primary flex-1"
+                hx-post="/send-bytes"
+                hx-include="[name='send-device']"
+                hx-swap="none">
+            Start Senden
+        </button>
+        """
+
     return {
-        "success": True,
-        "message": f"Sende auf {device}"
+        "success": False,
+        "message": "Kein aktives Senden"
     }
 
 
