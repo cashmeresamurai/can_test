@@ -11,7 +11,7 @@ import threading
 from threading import Event
 from send import send_can_frames
 from receive import receive_can_frames
-
+from pprint import pprint
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 components = Jinja2Templates(directory="templates/components")
@@ -149,6 +149,9 @@ def index(request: Request):
 async def start_scan(request: Request):
     try:
         result = run_initialize_with_sudo()
+        devices = result["devices"]
+        pprint(type(devices))
+        pprint(devices)
         return templates.TemplateResponse(
             "components/start_scan.html",
             {

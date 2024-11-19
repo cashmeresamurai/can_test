@@ -1,22 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center">
-  <div class="prose text-center">
+<div class="min-h-screen flex flex-col items-center justify-center">
+  <div id="instruction-start" class="prose text-center">
     <h1>USB-CAN Tester</h1>
-    <button class="btn" hx-get="/start-scan" hx-swap="innerHTML" hx-target="#scan-result">Start Scan</button>
-    <div id="scan-result"></div>
-    <div class="flex gap-16 p-4 justify-center">
-      <select class="select select-lg max-w-xs">
-        <option disabled selected>Choose your USB CAN device</option>
-        <option>USB CAN 1</option>
-        <option>USB CAN 2</option>
-        <option>USB CAN 3</option>
-      </select>
-      <select class="select max-w-xs" disabled>
-        <option>No devices available</option>
-      </select>
-    </div>
+    <h2>Bitte führen Sie die vor dem Start folgende Überprüfungen durch:</h2>
+
+    <h2>Kabelverbindungen überprüfen</h2>
+    <p>Stellen Sie sicher, dass alle USB- und CAN-Verbindungen fest und korrekt
+      angeschlossen sind. Ein lockerer Kontakt kann zu Verbindungsproblemen führen.</p>
+    <h2>LED-Status kontrollieren</h2>
+    <p>Nach dem Anschließen des USB-CAN an den Computer/Raspberry PI müssen folgende Lichter blinken:</p>
+    <p class="text-error">ERROR LED (oben): Sollte rot aufleuchten</p>
+    <p class="text-success">DATA LED (unten): Sollte grün aufleuchten</p>
+
+    <button class="btn mt-4" hx-get="/start-scan" hx-swap="outerHTML" hx-target="#instruction-start">Start</button>
+    <div></div>
   </div>
+</div>
+<div class="flex gap-16 p-4 justify-center">
 </div>
 {% endblock content %}
