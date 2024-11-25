@@ -1,0 +1,12 @@
+<h1>USB-CAN Tester</h1>
+<h2>Bitte führen Sie die vor dem Start folgende Überprüfungen durch:</h2>
+
+<h2>Kabelverbindungen überprüfen</h2>
+<p>Stellen Sie sicher, dass alle USB- und CAN-Verbindungen fest und korrekt
+  angeschlossen sind. Ein lockerer Kontakt kann zu Verbindungsproblemen führen.</p>
+<h2>LED-Status kontrollieren</h2>
+<p>Nach dem Anschließen des USB-CAN an den Computer/Raspberry Pi müssen folgende Lichter blinken:</p>
+<p class="text-error">ERROR LED (oben): Sollte rot aufleuchten</p>
+<p class="text-success">DATA LED (unten): Sollte grün aufleuchten</p>
+
+<button class="btn mt-4" hx-get="/start-scan" hx-swap="outerHTML" hx-target="#instructions">Start</button>

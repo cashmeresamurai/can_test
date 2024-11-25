@@ -9,8 +9,8 @@ import sys  # sys Modul importieren
 import os
 import threading
 from threading import Event
-from send import send_can_frames
-from receive import receive_can_frames
+from send import send_can_frames, send_image_over_can
+from receive import receive_can_frames, receive_image_over_can
 from pprint import pprint
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -41,12 +41,11 @@ async def receive_bytes(request: Request):
 
     receive_stop_event = Event()
     receive_thread = threading.Thread(
-        target=receive_can_frames,
+        target=receive_image_over_can,
         args=(device, 100000, receive_stop_event)
     )
     receive_thread.start()
 
-    # HTMX Response für Button-Updates
     return """
     <button class="btn btn-primary flex-1" disabled
             hx-post="/receive-bytes"
@@ -98,12 +97,11 @@ async def send_bytes(request: Request):
 
     send_stop_event = Event()
     send_thread = threading.Thread(
-        target=send_can_frames,
+        target=send_image_over_can,
         args=(device, 100000, send_stop_event)
     )
     send_thread.start()
 
-    # HTMX Response für Button-Update
     return """
     <button class="btn btn-primary flex-1" disabled
             hx-post="/send-bytes"
@@ -145,36 +143,75 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/step-1", response_class=HTMLResponse)
+def step_1(request: Request):
+    return templates.TemplateResponse("step_1.html", {"request": request})
+
+
+@app.get("/step-2", response_class=HTMLResponse)
+def step_2(request: Request):
+    return templates.TemplateResponse("step_2.html", {"request": request})
+
+
+@app.get("/step-3", response_class=HTMLResponse)
+def step_3(request: Request):
+    return templates.TemplateResponse("step_3.html", {"request": request})
+
+
+def get_devices_list(initialize_result):
+    try:
+        # Convert string to dictionary if needed
+        if isinstance(initialize_result, str):
+            initialize_result = json.loads(initialize_result)
+
+        if isinstance(initialize_result, dict):
+            if 'devices' in initialize_result:
+                devices = []
+                for port, info in initialize_result['devices'].items():
+                    device_info = info.copy()
+                    device_info['port'] = port
+                    devices.append(device_info)
+                print(len(devices))
+                return devices, "success", None
+            elif 'status' in initialize_result and initialize_result['status'] == 'success':
+                return [], "success", None
+            elif 'error' in initialize_result:
+                return [], "error", initialize_result['error']
+
+        return [], "error", "Invalid data format"
+
+    except Exception as e:
+        return [], "error", str(e)
+
+
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
     try:
-        result = run_initialize_with_sudo()
-        devices = result["devices"]
-        pprint(type(devices))
-        pprint(devices)
+        initialize_result = run_initialize_with_sudo()
+        devices, status, error = get_devices_list(initialize_result)
+
+        if error:
+            raise HTTPException(status_code=500, detail=error)
+
         return templates.TemplateResponse(
             "components/start_scan.html",
             {
                 "request": request,
-                "devices": result.get("devices", {}),
-                "status": result.get("status", "error"),
-                "error": result.get("error")
+                "devices": devices,
+                "status": status,
+                "error": None
             }
         )
     except Exception as e:
+        pprint(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 def run_initialize_with_sudo():
     try:
-        # Setze die Berechtigungen für den seriellen Port
-        # subprocess.run(['sudo', 'chmod', '666', '/dev/ttyUSB0'], check=True)
-
-        # Hole den Pfad zum aktuellen Python-Interpreter und Arbeitsverzeichnis
         current_dir = os.getcwd()
         python_executable = sys.executable
 
-        # Führe das Python-Skript mit sudo und korrektem PYTHONPATH aus
         cmd = [
             'sudo',
             '-S',
@@ -189,28 +226,20 @@ def run_initialize_with_sudo():
             cmd,
             capture_output=True,
             text=True,
-            input="root\n",  # Ersetzen Sie dies mit dem tatsächlichen Passwort
+            input="root\n",
             encoding='utf-8'
         )
 
         if result.returncode != 0:
-            error_msg = f"Stdout: {result.stdout}\nStderr: {result.stderr}"
-            return {"error": f"Fehler bei der Ausführung: {error_msg}"}
+            return {"error": f"Execution error: {result.stderr}"}
 
-        # Konvertiere die Ausgabe in ein Dictionary
-        try:
-            # Entferne eventuelle zusätzliche Ausgaben vor dem JSON
-            output_lines = result.stdout.strip().split('\n')
-            json_line = output_lines[-1]  # Nimm die letzte Zeile
-            return json.loads(json_line)
-        except json.JSONDecodeError as e:
-            return {
-                "error": f"Konnte Ausgabe nicht als JSON verarbeiten: {str(e)}",
-                "output": result.stdout
-            }
+        # Clean and parse output
+        output_lines = result.stdout.strip().split('\n')
+        json_line = output_lines[-1]  # Take the last line
+        return json.loads(json_line)
 
     except Exception as e:
-        return {"error": f"Ausführungsfehler: {str(e)}"}
+        return {"error": f"Execution error: {str(e)}"}
 
 
 if __name__ == "__main__":

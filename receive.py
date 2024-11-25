@@ -1,9 +1,13 @@
+from pprint import pprint
 from threading import Event
 import can
 import serial
 import sys
 import threading
 import time
+import base64
+from PIL import Image
+import io
 
 
 def receive_can_frames(port, bitrate, stop_event):
@@ -21,18 +25,83 @@ def receive_can_frames(port, bitrate, stop_event):
 
     while not stop_event.is_set():
         try:
-            # Timeout von 0.1 Sekunden hinzugefügt
             msg = bus.recv(timeout=0.1)
             if msg is not None:
-                data = "".join("{:02X} ".format(byte) for byte in msg.data)
-                print("{:X} [{}] {}".format(msg.arbitration_id,
-                                            msg.dlc,
-                                            data))
+                # Bytes aus der CAN-Nachricht extrahieren
+                bytes_received = bytes(list(msg.data))
+
+                # Bytes in ein Bild umwandeln und speichern
+                image = Image.open(io.BytesIO(bytes_received))
+                image.save("received_image.jpg")
+                print("Image saved as received_image.jpg")
+
+                # Formatierte Ausgabe der CAN-Nachricht
+                data = " ".join([f"{byte:02X}" for byte in msg.data])
+                print(
+                    f"ID: {msg.arbitration_id:X} [DLC: {msg.dlc}] Data: {data}")
+            else:
+                print("No message received")
         except can.CanError:
-            pass
+            print("CAN error occurred")
+        except Exception as e:
+            print(f"Error processing image: {e}")
 
     print("Shutting down CAN bus...")
     bus.shutdown()
+
+
+def receive_image_over_can(port, bitrate, stop_event):
+    try:
+        bus = can.Bus(interface='slcan',
+                      channel=f"{port}@3000000",
+                      rtscts=True,
+                      bitrate=bitrate)
+
+        print("Bereit zum Empfangen des Bildes")
+        collected_data = bytearray()
+        bytes_received = 0
+        expected_size = 3120  # Bekannte Bildgröße
+        png_started = False
+
+        while not stop_event.is_set():
+            msg = bus.recv(timeout=0.1)
+            if msg is not None:
+                # Wenn PNG Header gefunden wird, starte neue Sammlung
+                if not png_started and len(msg.data) >= 8 and msg.data[0:8] == b'\x89PNG\r\n\x1a\n':
+                    collected_data = bytearray()
+                    bytes_received = 0
+                    png_started = True
+                    print("PNG Header erkannt - Starte Sammlung")
+
+                if png_started:
+                    collected_data.extend(msg.data)
+                    bytes_received += len(msg.data)
+
+                    if bytes_received % 400 == 0:
+                        print(
+                            f"Empfangen: {bytes_received}/{expected_size} Bytes")
+
+                    # Nur validieren wenn die erwartete Größe erreicht ist
+                    if bytes_received >= expected_size:
+                        try:
+                            Image.open(io.BytesIO(collected_data)).verify()
+                            with open('received_colorbars.png', 'wb') as f:
+                                f.write(collected_data)
+                            print(
+                                f"Bild erfolgreich gespeichert ({bytes_received} Bytes)")
+                            collected_data = bytearray()
+                            bytes_received = 0
+                            png_started = False
+                        except Exception as e:
+                            print(f"Fehler beim Speichern: {e}")
+                            collected_data = bytearray()
+                            bytes_received = 0
+                            png_started = False
+
+    except Exception as e:
+        print(f"Fehler beim Empfangen: {e}")
+    finally:
+        bus.shutdown()
 
 
 def main():
