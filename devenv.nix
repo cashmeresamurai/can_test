@@ -45,6 +45,7 @@
       pycairo
       result
       python-multipart
+      maturin
       '';
     };
   };
