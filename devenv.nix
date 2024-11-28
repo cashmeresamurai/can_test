@@ -24,8 +24,10 @@
     glib
     gvfs
     gnome.adwaita-icon-theme
+    llvmPackages_12.clang-unwrapped
+    linuxHeaders
   ];
-
+  languages.rust.enable = true;
   languages.python = {
     enable = true;
     version = "3.11";
@@ -55,6 +57,9 @@
     LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH";
     # Add GI environment variables
     GI_TYPELIB_PATH = "${pkgs.gtk3}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0";
+
+    LIBCLANG_PATH = "${pkgs.llvmPackages_12.clang-unwrapped.lib}/lib";
+    BINDGEN_EXTRA_CLANG_ARGS = "-I${pkgs.linuxHeaders}/include";
   };
 
   enterShell = ''

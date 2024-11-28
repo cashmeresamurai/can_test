@@ -9,4 +9,5 @@ name = "can_test"
 crate-type = ["cdylib"]
 
 [dependencies]
+linuxfb = "0.3.1"
 pyo3 = "0.23.1"
