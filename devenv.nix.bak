@@ -1,52 +1,67 @@
 { pkgs, ... }:
 
 {
-  # Enable devenv shell features
   packages = with pkgs; [
     python3
-    python3Packages.numpy
-    python3Packages.pandas
-    python3Packages.polars
-    python3Packages.openpyxl
-    python3Packages.matplotlib
-    python3Packages.seaborn
-    python3Packages.result
-    python3Packages.xlsxwriter
-    python3Packages.pytz
-    python3Packages.tkinter
     stdenv.cc.cc.lib
     pyright
+    lsof
+    tcpdump
+    python3Packages.pyftdi
     lazygit
     ripgrep
+    python3Packages.fastapi
+    python3Packages.jinja2
+    python3Packages.uvicorn
+    # Add GTK dependencies
+    gtk4
+    gobject-introspection
+    python3Packages.pygobject3
+    python3Packages.pycairo
+    python3Packages.tkinter
+    python3Packages.result
+    tk
+    glib
+    gvfs
+    gnome.adwaita-icon-theme
+    llvmPackages_12.clang-unwrapped
+    linuxHeaders
   ];
-
-  languages.javascript.enable = true;
+  languages.rust.enable = true;
   languages.python = {
     enable = true;
     version = "3.11";
     venv = {
       enable = true;
       requirements = ''
-        numpy
-        matplotlib
-        python-power-bi
-        seaborn
-        pandas
-        polars
-        result
-        openpyxl
-        xlsxwriter
-        pytz
-        pandasgui
-        tkinter
+      python-can
+      customtkinter
+      netifaces
+      pyserial
+      pysnmplib
+      pyftdi
+      fastapi
+      jinja2
+      uvicorn
+      pygobject
+      pycairo
+      result
+      python-multipart
+      maturin
       '';
     };
   };
 
   # Set environment variables
-  env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH";
+  env = {
+    LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH";
+    # Add GI environment variables
+    GI_TYPELIB_PATH = "${pkgs.gtk3}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0";
 
-  # Enter the environment
+    LIBCLANG_PATH = "${pkgs.llvmPackages_12.clang-unwrapped.lib}/lib";
+    BINDGEN_EXTRA_CLANG_ARGS = "-I${pkgs.linuxHeaders}/include";
+  };
+
   enterShell = ''
     echo "Python environment ready!"
   '';

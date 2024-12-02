@@ -1,0 +1,9 @@
+version = 1
+
+[[distribution]]
+name = "can-test"
+version = "0.1.0"
+source = "directory+file:///home/nix/Documents/GitHub/can_test"
+
+[distribution.sdist]
+url = "file:///home/nix/Documents/GitHub/can_test"
