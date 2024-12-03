@@ -6,7 +6,9 @@ CAN device tester.
 """
 
 from typing import Dict, Any, List
+from typing_extensions import TypedDict
 from result import Result, Ok, Err
+
 import argparse
 import os.path
 import queue
@@ -420,52 +422,67 @@ def send_can_frames(port, bitrate, mode):
             time.sleep(0.5)
 
 
-def initialize() -> Dict[str, Any]:
+class FoundDeviceError(TypedDict):
+    port: str
+    status: str
+    error: str
+
+
+def initialize() -> Result[Dict[str, Any], str]:
     """Main routine."""
-    port_list_result = find_all_usb_can_devices()
+    port_list_result: Result[List["str"], str] = find_all_usb_can_devices()
+    print(port_list_result)
+    if isinstance(port_list_result, Err):
+        return Err("Failed to find USB-CAN devices")
 
-    if not isinstance(port_list_result, Ok):
-        return {"status": "error", "error": "Failed to find USB-CAN devices"}
-
-    port_list = port_list_result.ok_value
+    port_list = port_list_result
     if not port_list:
         if sys.platform.startswith('linux'):
             get_system_info()
-        return {"status": "empty", "message": "No USB-CAN devices found"}
+        return Err("No USB-CAN devices found")
 
-    devices_info = {}
-    for item in port_list:
-        device_result = process_device(item)
-        match device_result:
-            case Ok(info):
-                devices_info[str(item)] = info
-            case Err(error):
-                devices_info[str(item)] = {
-                    'port': str(item),
-                    'status': 'error',
-                    'error': str(error)
-                }
+    devices_info: List[Result[FoundDevice, FoundDeviceError]] = []
+    for device in port_list.unwrap():
+        device_result: Result[FoundDevice, str] = process_device(device)
+        if isinstance(device_result, Ok):
+            found_device: FoundDevice = device_result.unwrap()
+            devices_info.append(Ok(found_device))
+        elif device_result.is_err():
+            error_message: str = device_result.unwrap_err()
+            device_error: FoundDeviceError = {
+                "port": device,
+                "status": "error",
+                "error": error_message
+            }
+            devices_info.append(Err(device_error))
+        # match device_result:
+        #     case isinstance(devices_info, Ok):
+        #         devices_info[device] = info
+            # case Err(error):
+            #     devices_info[str(item)] = {
+            #         'port': str(item),
+            #         'status': 'error',
+            #         'error': str(error)
+            #     }
 
-    return {"status": "success", "devices": devices_info}
+    return Ok({"status": "success", "devices": devices_info})
 
 
-def process_device(item) -> Result[Dict[str, Any], str]:
+class FoundDevice(TypedDict):
+    # 'serial_number': ser_num.decode('ascii'),
+    serial_number: str
+    # 'firmware': f"{ver_major}:{ver_minor}",
+    firmware: str
+    # 'hardware': f"{hw_major}:{hw_minor}",
+    hardware: str
+    # 'status': 'success'
+    status: str
+
+
+def process_device(device_port: str) -> Result[FoundDevice, str]:
     """Process a single USB-CAN device."""
-    device_info = {
-        'port': str(item),
-        'status': 'initializing'
-    }
 
-    usbcan = UsbCan(item)
-
-    if sys.platform.startswith('linux'):
-        port_result = find_port(usbcan.port)
-        if isinstance(port_result, Err):
-            return Err(f"Port detection failed: {port_result.err_value}")
-
-        lsof_result = usbcan.lsof()
-        if isinstance(lsof_result, Err):
-            return Err(f"LSOF check failed: {lsof_result.err_value}")
+    usbcan = UsbCan(device_port)
 
     init_result = usbcan.init_serial_port()
     if not init_result:
@@ -491,22 +508,27 @@ def process_device(item) -> Result[Dict[str, Any], str]:
     except (ValueError, IndexError):
         return Err("Failed to parse version information")
 
-    device_info.update({
+    found_device: FoundDevice = {
         'serial_number': ser_num.decode('ascii'),
         'firmware': f"{ver_major}:{ver_minor}",
         'hardware': f"{hw_major}:{hw_minor}",
         'status': 'success'
-    })
+    }
 
     usbcan.close()
-    return Ok(device_info)
+    return Ok(found_device)
 
 
 def find_all_usb_can_devices() -> Result[List[str], str]:
     """Find all USB-CAN devices and return as Result."""
     try:
         devices = original_find_all_usb_can_devices()
-        return Ok(devices) if devices is not None else Err("No devices found")
+        match len(devices):
+            case 0:
+                return Err("No devices found")
+            case _:
+                return Ok(devices)
+        # return Ok(devices) if devices is not None else Err("No devices found")
     except Exception as e:
         return Err(f"Failed to find USB-CAN devices: {str(e)}")
 

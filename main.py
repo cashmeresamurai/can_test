@@ -1,7 +1,10 @@
+from typing import Any
+from typing_extensions import Dict, List
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from result import Err, Ok, Result
 import uvicorn
 import subprocess
 import json
@@ -9,6 +12,7 @@ import sys  # sys Modul importieren
 import os
 import threading
 from threading import Event
+from scanner import FoundDevice, FoundDeviceError, initialize
 from send import send_can_frames, send_image_over_can
 from receive import receive_can_frames, receive_image_over_can
 from pprint import pprint
@@ -158,88 +162,31 @@ def step_3(request: Request):
     return templates.TemplateResponse("step_3.html", {"request": request})
 
 
-def get_devices_list(initialize_result):
-    try:
-        # Convert string to dictionary if needed
-        if isinstance(initialize_result, str):
-            initialize_result = json.loads(initialize_result)
 
-        if isinstance(initialize_result, dict):
-            if 'devices' in initialize_result:
-                devices = []
-                for port, info in initialize_result['devices'].items():
-                    device_info = info.copy()
-                    device_info['port'] = port
-                    devices.append(device_info)
-                print(len(devices))
-                return devices, "success", None
-            elif 'status' in initialize_result and initialize_result['status'] == 'success':
-                return [], "success", None
-            elif 'error' in initialize_result:
-                return [], "error", initialize_result['error']
 
-        return [], "error", "Invalid data format"
-
-    except Exception as e:
-        return [], "error", str(e)
 
 
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
     try:
-        initialize_result = run_initialize_with_sudo()
-        devices, status, error = get_devices_list(initialize_result)
+        initialize_result: Result[Dict[str, Any], str] = initialize()
 
-        if error:
-            raise HTTPException(status_code=500, detail=error)
+        if isinstance(initialize_result, Err):
+            raise HTTPException(
+                status_code=500, detail=initialize_result.unwrap_err())
 
         return templates.TemplateResponse(
             "components/start_scan.html",
             {
                 "request": request,
-                "devices": devices,
-                "status": status,
+                "devices": initialize_result.unwrap(),
+                "status": "success",
                 "error": None
             }
         )
     except Exception as e:
         pprint(e)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-def run_initialize_with_sudo():
-    try:
-        current_dir = os.getcwd()
-        python_executable = sys.executable
-
-        cmd = [
-            'sudo',
-            '-S',
-            'env',
-            f'PYTHONPATH={current_dir}',
-            python_executable,
-            '-c',
-            'from scanner import initialize; import json; print(json.dumps(initialize()))'
-        ]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            input="root\n",
-            encoding='utf-8'
-        )
-
-        if result.returncode != 0:
-            return {"error": f"Execution error: {result.stderr}"}
-
-        # Clean and parse output
-        output_lines = result.stdout.strip().split('\n')
-        json_line = output_lines[-1]  # Take the last line
-        return json.loads(json_line)
-
-    except Exception as e:
-        return {"error": f"Execution error: {str(e)}"}
 
 
 if __name__ == "__main__":
