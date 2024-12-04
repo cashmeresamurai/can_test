@@ -219,24 +219,26 @@ class Device(TypedDict):
     firmware: str
     hardware: str
     status: str
+    device_type: str
+
 
 
 def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
     filtered_devices: List[Device] = []
-    #print(f"unfiltered list: {devices},\nlen: {len(devices)}")
     match len(devices):
         case 0:
-            #print("case 0")
             return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
         case 1:
             return Err("Es wurde ein USB-CAN Gerät gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
         case 2:
             for found_device in devices:
+                device_type = "Prüfhilfsmittel" if found_device["serial_number"] == "380105787" else "Prüfgerät"
                 device: Device = {
                     "serial_number": found_device["serial_number"],
                     "firmware": found_device["firmware"],
                     "hardware": found_device["hardware"],
-                    "status": found_device["status"]
+                    "status": found_device["status"],
+                    "device_type": device_type
                 }
                 filtered_devices.append(device)
         case _:
