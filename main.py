@@ -28,95 +28,73 @@ receive_stop_event = None
 receive_thread = None
 send_stop_event = None
 send_thread = None
+pruefhilfsmittel = None
+pruefgeraet = None
 
 
-@app.post("/receive-bytes")
-async def receive_bytes(request: Request):
-    global receive_stop_event, receive_thread
-
-    data = await request.form()
-    device = data.get('receive-device')
-
-    if receive_thread and receive_thread.is_alive():
-        return {
-            "success": False,
-            "message": "Empfang läuft bereits"
-        }
-
-    receive_stop_event = Event()
-    receive_thread = threading.Thread(
-        target=receive_image_over_can,
-        args=(device, 100000, receive_stop_event)
-    )
-    receive_thread.start()
-
-    return """
-    <button class="btn btn-primary flex-1" disabled
-            hx-post="/receive-bytes"
-            hx-include="[name='receive-device']"
-            hx-swap="none">
-        Empfange...
-    </button>
-    """
+class TestDevice(TypedDict):
+    name: str
+    port: str
 
 
-@app.post("/stop-receive")
-async def stop_receive():
-    global receive_stop_event, receive_thread
+async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
+    try:
+        global receive_stop_event, receive_thread
 
-    if receive_stop_event and receive_thread:
-        receive_stop_event.set()
-        receive_thread.join()
+        receive_stop_event = Event()
+        receive_thread = threading.Thread(
+            target=receive_image_over_can,
+            args=(test_device["port"], 100000, receive_stop_event)
+        )
+        receive_thread.start()
+        return Ok(True)
+    except:
         receive_stop_event = None
         receive_thread = None
-
-        # HTMX Response für Button-Reset
-        return """
-        <button class="btn btn-primary flex-1"
-                hx-post="/receive-bytes"
-                hx-include="[name='receive-device']"
-                hx-swap="none">
-            Start Empfangen
-        </button>
-        """
-
-    return {
-        "success": False,
-        "message": "Kein aktiver Empfang"
-    }
+        return Err(f"Der Startvorgang für {test_device['name']} konnte nicht gestartet werden.")
 
 
-@app.post("/send-bytes")
-async def send_bytes(request: Request):
-    global send_stop_event, send_thread
+async def stop_receive() -> Result[bool, str]:
+    try:
+        global receive_stop_event, receive_thread
 
-    data = await request.form()
-    device = data.get('send-device')
-
-    if send_thread and send_thread.is_alive():
-        return {
-            "success": False,
-            "message": "Senden läuft bereits"
-        }
-
-    send_stop_event = Event()
-    send_thread = threading.Thread(
-        target=send_image_over_can,
-        args=(device, 100000, send_stop_event)
-    )
-    send_thread.start()
-
-    return """
-    <button class="btn btn-primary flex-1" disabled
-            hx-post="/send-bytes"
-            hx-include="[name='send-device']"
-            hx-swap="none">
-        Sende...
-    </button>
-    """
+        if receive_stop_event and receive_thread:
+            receive_stop_event.set()
+            receive_thread.join()
+            receive_stop_event = None
+            receive_thread = None
+            return Ok(True)
+        else:
+            return Err("Der Endvorgang konnte nicht gestoppt werden.")
+    except:
+        receive_stop_event = None
+        receive_thread = None
+        return Err(f"Der Endvorgang konnte nicht gestoppt werden.")
 
 
-@app.post("/stop-send")
+async def send_bytes(test_device: TestDevice) -> Result[bool, str]:
+    try:
+        global send_stop_event, send_thread
+
+        # if send_thread and send_thread.is_alive():
+        #     return {
+        #         "success": False,
+        #         "message": "Senden läuft bereits"
+        #     }
+
+        send_stop_event = Event()
+        send_thread = threading.Thread(
+            target=send_image_over_can,
+            args=(test_device["port"], 100000, send_stop_event)
+        )
+        send_thread.start()
+        return Ok(True)
+    except:
+        send_stop_event = None
+        send_thread = None
+        return Err(f"Der Startvorgang für das Senden des Testbilds für '{test_device['name']}' konnte nicht gestartet werden")
+
+
 async def stop_send():
     global send_stop_event, send_thread
 
@@ -126,21 +104,11 @@ async def stop_send():
         send_stop_event = None
         send_thread = None
 
-        # HTMX Response für Button-Reset
-        return """
-        <button class="btn btn-primary flex-1"
-                hx-post="/send-bytes"
-                hx-include="[name='send-device']"
-                hx-swap="none">
-            Start Senden
-        </button>
-        """
 
-    return {
-        "success": False,
-        "message": "Kein aktives Senden"
-    }
+@app.get("/can-send-receive-1", response_class=HTMLResponse)
+def send_receive_1():
 
+    pass
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -165,7 +133,7 @@ def step_3(request: Request):
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
     initialize_result: Result[Dict[str, Any], str] = initialize()
-    #print(initialize_result)
+    # print(initialize_result)
     if isinstance(initialize_result, Err):
         error_message: str = initialize_result.unwrap_err()
         data: Dict[str, Any] = {
@@ -222,8 +190,8 @@ class Device(TypedDict):
     device_type: str
 
 
-
 def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
+    global pruefhilfsmittel, pruefgeraet
     filtered_devices: List[Device] = []
     match len(devices):
         case 0:
@@ -232,7 +200,13 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
             return Err("Es wurde ein USB-CAN Gerät gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
         case 2:
             for found_device in devices:
-                device_type = "Prüfhilfsmittel" if found_device["serial_number"] == "380105787" else "Prüfgerät"
+                # device_type = "Prüfhilfsmittel" if found_device[
+                #     "serial_number"] == "380105787" else "Prüfgerät"
+                if found_device["serial_number"] == "380105787":
+                    pruefhilfsmittel: TestDevice = {
+                        "name": "Prüfhilfsmittel",
+                        "port": found_device["port"]
+                    }
                 device: Device = {
                     "serial_number": found_device["serial_number"],
                     "firmware": found_device["firmware"],
