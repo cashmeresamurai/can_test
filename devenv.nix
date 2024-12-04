@@ -26,7 +26,7 @@
     linuxHeaders
   ];
 
-  languages.rust.enable = true;
+  # languages.rust.enable = true;
   languages.python = {
     enable = true;
     version = "3.11";

@@ -22,6 +22,7 @@ module.exports = {
       "light",
       "dark",
       "autumn",
+      "corporate"
     ],
   },
   plugins: [

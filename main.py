@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TypedDict
 from typing_extensions import Dict, List
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -162,31 +162,87 @@ def step_3(request: Request):
     return templates.TemplateResponse("step_3.html", {"request": request})
 
 
-
-
-
-
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
-    try:
-        initialize_result: Result[Dict[str, Any], str] = initialize()
-
-        if isinstance(initialize_result, Err):
-            raise HTTPException(
-                status_code=500, detail=initialize_result.unwrap_err())
+    initialize_result: Result[Dict[str, Any], str] = initialize()
+    #print(initialize_result)
+    if isinstance(initialize_result, Err):
+        error_message: str = initialize_result.unwrap_err()
+        data: Dict[str, Any] = {
+            "request": request,
+            "error_message": error_message
+        }
 
         return templates.TemplateResponse(
-            "components/start_scan.html",
-            {
-                "request": request,
-                "devices": initialize_result.unwrap(),
-                "status": "success",
-                "error": None
-            }
+            name="components/error.html",
+            context=data,
         )
-    except Exception as e:
-        pprint(e)
-        raise HTTPException(status_code=500, detail=str(e))
+    elif isinstance(initialize_result, Ok):
+        untyped_devices: Dict[str, Any] = initialize_result.ok()
+        devices_result: List[Dict[str, str]] = untyped_devices["devices"]
+        typed_device_list: List[Device] = []
+        for device in devices_result:
+            device_result = device.unwrap()
+            typed_device: Device = {
+                "serial_number": device_result["serial_number"],
+                "hardware": device_result["hardware"],
+                "firmware": device_result["firmware"],
+                "status": device_result["status"]
+            }
+            typed_device_list.append(typed_device)
+
+        devices: Result[List[Device], str] = filter_devices(
+            devices=typed_device_list)
+        if devices.is_err():
+            error_message1: str = devices.unwrap_err()
+            err_data: Dict[str, Any] = {
+                "request": request,
+                "error_message": error_message1
+            }
+            return components.TemplateResponse(name="error.html",
+                                               context=err_data)
+        elif devices.is_ok():
+            return templates.TemplateResponse(
+                "components/start_scan.html",
+                {
+                    "request": request,
+                    "devices": devices.ok(),
+                    "status": "success",
+                    "error": None
+                }
+            )
+        # raise HTTPException(status_code=500, detail=str(e))
+
+
+class Device(TypedDict):
+    serial_number: str
+    firmware: str
+    hardware: str
+    status: str
+
+
+def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
+    filtered_devices: List[Device] = []
+    #print(f"unfiltered list: {devices},\nlen: {len(devices)}")
+    match len(devices):
+        case 0:
+            #print("case 0")
+            return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+        case 1:
+            return Err("Es wurde ein USB-CAN Gerät gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+        case 2:
+            for found_device in devices:
+                device: Device = {
+                    "serial_number": found_device["serial_number"],
+                    "firmware": found_device["firmware"],
+                    "hardware": found_device["hardware"],
+                    "status": found_device["status"]
+                }
+                filtered_devices.append(device)
+        case _:
+            return Err("Es wurden mehr als zwei USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+
+    return Ok(filtered_devices)
 
 
 if __name__ == "__main__":
