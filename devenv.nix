@@ -12,7 +12,6 @@
     python3Packages.fastapi
     python3Packages.jinja2
     python3Packages.uvicorn
-    gtk4
     gobject-introspection
     python3Packages.pygobject3
     python3Packages.pycairo
@@ -24,44 +23,27 @@
     gnome.adwaita-icon-theme
     llvmPackages_12.clang-unwrapped
     linuxHeaders
+    cargo
   ];
 
-  # languages.rust.enable = true;
   languages.python = {
     enable = true;
     version = "3.11";
-    uv = {
-      enable = true;
-      sync = {
-        enable = true;
-        extras = [
-          "python-can"
-          "customtkinter"
-          "netifaces"
-          "pyserial"
-          "pysnmplib"
-          "pyftdi"
-          "fastapi"
-          "jinja2"
-          "uvicorn"
-          "pygobject"
-          "pycairo"
-          "result"
-          "python-multipart"
-          "maturin"
-        ];
-      };
-    };
   };
 
   env = {
+    # UV_PYTHON = "${pkgs.python311}/bin/python3.11";
     LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH";
-    GI_TYPELIB_PATH = "${pkgs.gtk3}/lib/girepository-1.0:${pkgs.gobject-introspection}/lib/girepository-1.0";
     LIBCLANG_PATH = "${pkgs.llvmPackages_12.clang-unwrapped.lib}/lib";
     BINDGEN_EXTRA_CLANG_ARGS = "-I${pkgs.linuxHeaders}/include";
   };
 
   enterShell = ''
-    echo "Python environment ready with uv!"
+    if [ ! -d ".venv" ]; then
+      source .venv/bin/activate
+      uv pip install -r requirements.txt
+      uv sync
+    fi
+    source .venv/bin/activate
   '';
 }

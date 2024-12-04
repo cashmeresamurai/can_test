@@ -12,15 +12,35 @@ import sys  # sys Modul importieren
 import os
 import threading
 from threading import Event
-from scanner import FoundDevice, FoundDeviceError, initialize
-from send import send_can_frames, send_image_over_can
-from receive import receive_can_frames, receive_image_over_can
+from .scanner import FoundDevice, FoundDeviceError, initialize
+from .send import send_can_frames, send_image_over_can
+from .receive import receive_can_frames, receive_image_over_can
 from pprint import pprint
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
-components = Jinja2Templates(directory="templates/components")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+import os
+from pathlib import Path
+app = FastAPI()
+
+# Get the base directory (where pyproject.toml is)
+BASE_DIR = Path(__file__).resolve().parent.parent
+print(BASE_DIR)
+
+# Update templates and static paths
+templates = Jinja2Templates(directory=str(BASE_DIR / "can_test/templates"))
+components = Jinja2Templates(directory=str(
+    BASE_DIR / "can_test/templates/components"))
+
+# Update static path to match the new structure
+static_dir = BASE_DIR / "can_test/static"
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir)
+
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+class TestDevice(TypedDict):
+    name: str
+    port: str
 
 
 # Globale Variable für das Stop-Event und den Thread
@@ -28,13 +48,8 @@ receive_stop_event = None
 receive_thread = None
 send_stop_event = None
 send_thread = None
-pruefhilfsmittel = None
-pruefgeraet = None
-
-
-class TestDevice(TypedDict):
-    name: str
-    port: str
+pruefhilfsmittel: TestDevice = None
+pruefgeraet: TestDevice = None
 
 
 async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
@@ -110,6 +125,7 @@ def send_receive_1():
 
     pass
 
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -133,14 +149,12 @@ def step_3(request: Request):
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
     initialize_result: Result[Dict[str, Any], str] = initialize()
-    # print(initialize_result)
     if isinstance(initialize_result, Err):
         error_message: str = initialize_result.unwrap_err()
         data: Dict[str, Any] = {
             "request": request,
             "error_message": error_message
         }
-
         return templates.TemplateResponse(
             name="components/error.html",
             context=data,
@@ -148,14 +162,18 @@ async def start_scan(request: Request):
     elif isinstance(initialize_result, Ok):
         untyped_devices: Dict[str, Any] = initialize_result.ok()
         devices_result: List[Dict[str, str]] = untyped_devices["devices"]
+        ports: List[str] = untyped_devices.get(
+            "ports", ['/dev/ttyUSB0', '/dev/ttyUSB1'])
         typed_device_list: List[Device] = []
-        for device in devices_result:
+
+        for i, device in enumerate(devices_result):
             device_result = device.unwrap()
             typed_device: Device = {
                 "serial_number": device_result["serial_number"],
                 "hardware": device_result["hardware"],
                 "firmware": device_result["firmware"],
-                "status": device_result["status"]
+                "status": device_result["status"],
+                "port": ports[i] if i < len(ports) else f"/dev/ttyUSB{i}"
             }
             typed_device_list.append(typed_device)
 
@@ -179,7 +197,6 @@ async def start_scan(request: Request):
                     "error": None
                 }
             )
-        # raise HTTPException(status_code=500, detail=str(e))
 
 
 class Device(TypedDict):
@@ -187,32 +204,46 @@ class Device(TypedDict):
     firmware: str
     hardware: str
     status: str
-    device_type: str
+    port: str
 
 
 def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
     global pruefhilfsmittel, pruefgeraet
+    print(devices)
     filtered_devices: List[Device] = []
     match len(devices):
         case 0:
-            return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+            return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+
         case 1:
-            return Err("Es wurde ein USB-CAN Gerät gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+            return Err("Es nur ein USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+
         case 2:
             for found_device in devices:
-                # device_type = "Prüfhilfsmittel" if found_device[
-                #     "serial_number"] == "380105787" else "Prüfgerät"
                 if found_device["serial_number"] == "380105787":
-                    pruefhilfsmittel: TestDevice = {
+                    # Use global variable without annotation
+                    pruefhilfsmittel = {
                         "name": "Prüfhilfsmittel",
                         "port": found_device["port"]
+
                     }
+                    print("pruefhilfsmittel")
+                    pprint(f"{pruefhilfsmittel}")
+                else:
+                    pruefgeraet = {
+                        "name": "Prüfgerät",
+                        "port": found_device["port"]
+                    }
+                    print("pruefgeraet")
+                    pprint(f"{pruefgeraet}")
                 device: Device = {
                     "serial_number": found_device["serial_number"],
                     "firmware": found_device["firmware"],
                     "hardware": found_device["hardware"],
                     "status": found_device["status"],
-                    "device_type": device_type
+                    "port": found_device["port"],
+
+
                 }
                 filtered_devices.append(device)
         case _:
@@ -221,5 +252,9 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
     return Ok(filtered_devices)
 
 
+def main():
+    uvicorn.run(app, host="0.0.0.0", port=8000, )
+
+
 if __name__ == "__main__":
-    uvicorn.run(app="main:app", host="0.0.0.0", port=8000, reload=True)
+    main()
