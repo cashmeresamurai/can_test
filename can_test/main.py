@@ -158,7 +158,7 @@ async def send_receive_1(request: Request):
         await stop_send()
 
         return templates.TemplateResponse(
-            "components/success.html",
+            "components/success_1.html",
             {
                 "request": request,
                 "message": "Test 1: Kommunikation erfolgreich durchgeführt"
@@ -167,7 +167,7 @@ async def send_receive_1(request: Request):
 
 
 @app.get("/can-send-receive-2", response_class=HTMLResponse)
-async def send_receive_1(request: Request):
+async def send_receive_2(request: Request):
     global pruefgeraet, pruefhilfsmittel
 
 
@@ -203,10 +203,10 @@ async def send_receive_1(request: Request):
         await stop_send()
 
         return templates.TemplateResponse(
-            "components/success.html",
+            "components/success_2.html",
             {
                 "request": request,
-                "message": "Test 1: Kommunikation erfolgreich durchgeführt"
+                "message": "Test 2: Kommunikation erfolgreich durchgeführt"
             }
         )
 

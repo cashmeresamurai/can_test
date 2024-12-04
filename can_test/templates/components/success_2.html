@@ -1,0 +1,18 @@
+<div id="send-receive-1" class="flex flex-col items-center justify-center p-4">
+  <h1>Ein Testbild wurde erfolgreich vom Prüfgerät zum Prüfhilfsmittel über den CAN-Bus gesendet.</h1>
+  <div class="alert alert-success shadow-lg max-w-md">
+    <div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none"
+        viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{{ message }}</span>
+      <img src="/static/received_colorbars.png" alt="">
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <a hx-get="/can-send-receive-2" hx-swap="outerHTML" hx-target="#send-receive-1" class="btn btn-primary">Weiter</a>
+  </div>
+</div>
