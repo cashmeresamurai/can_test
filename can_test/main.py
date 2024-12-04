@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, TypedDict
 from typing_extensions import Dict, List
 from fastapi import FastAPI, Request, HTTPException
@@ -121,10 +122,93 @@ async def stop_send():
 
 
 @app.get("/can-send-receive-1", response_class=HTMLResponse)
-def send_receive_1():
+async def send_receive_1(request: Request):
+    global pruefgeraet, pruefhilfsmittel
 
-    pass
 
+    # Starte Empfang auf Prüfgerät
+    receive_result = await receive_bytes(pruefgeraet)
+    if isinstance(receive_result, Err):
+        return templates.TemplateResponse(
+            "components/error.html",
+            {
+                "request": request,
+                "error_message": receive_result.unwrap_err()
+            }
+        )
+
+    # Starte Senden auf Prüfhilfsmittel
+    send_result = await send_bytes(pruefhilfsmittel)
+    await asyncio.sleep(10)
+    if isinstance(send_result, Err):
+        # Stoppe den Empfang falls das Senden fehlschlägt
+        await stop_receive()
+        return templates.TemplateResponse(
+            "components/error.html",
+            {
+                "request": request,
+                "error_message": send_result.unwrap_err()
+            }
+        )
+
+    # Wenn beide Operationen erfolgreich waren
+    if send_result.is_ok() and receive_result.is_ok():
+        # Stoppe beide Operationen
+        await stop_receive()
+        await stop_send()
+
+        return templates.TemplateResponse(
+            "components/success.html",
+            {
+                "request": request,
+                "message": "Test 1: Kommunikation erfolgreich durchgeführt"
+            }
+        )
+
+
+@app.get("/can-send-receive-2", response_class=HTMLResponse)
+async def send_receive_1(request: Request):
+    global pruefgeraet, pruefhilfsmittel
+
+
+    # Starte Empfang auf Prüfgerät
+    receive_result = await receive_bytes(pruefhilfsmittel)
+    if isinstance(receive_result, Err):
+        return templates.TemplateResponse(
+            "components/error.html",
+            {
+                "request": request,
+                "error_message": receive_result.unwrap_err()
+            }
+        )
+
+    # Starte Senden auf Prüfhilfsmittel
+    send_result = await send_bytes(pruefgeraet)
+    await asyncio.sleep(10)
+    if isinstance(send_result, Err):
+        # Stoppe den Empfang falls das Senden fehlschlägt
+        await stop_receive()
+        return templates.TemplateResponse(
+            "components/error.html",
+            {
+                "request": request,
+                "error_message": send_result.unwrap_err()
+            }
+        )
+
+    # Wenn beide Operationen erfolgreich waren
+    if send_result.is_ok() and receive_result.is_ok():
+        # Stoppe beide Operationen
+        await stop_receive()
+        await stop_send()
+
+        return templates.TemplateResponse(
+            "components/success.html",
+            {
+                "request": request,
+                "message": "Test 1: Kommunikation erfolgreich durchgeführt"
+            }
+        )
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):

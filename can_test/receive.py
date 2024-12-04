@@ -9,6 +9,10 @@ import base64
 from PIL import Image
 import io
 
+from pathlib import Path
+
+# Get the base directory (where pyproject.toml is)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 def receive_can_frames(port, bitrate, stop_event):
     """Receive CAN frames."""
@@ -63,10 +67,12 @@ def receive_image_over_can(port, bitrate, stop_event):
         expected_size = 3120  # Bekannte Bildgröße
         png_started = False
 
+        # Konstruiere den korrekten Pfad für das Bild
+        image_path = BASE_DIR / "can_test/static/received_colorbars.png"
+
         while not stop_event.is_set():
             msg = bus.recv(timeout=0.1)
             if msg is not None:
-                # Wenn PNG Header gefunden wird, starte neue Sammlung
                 if not png_started and len(msg.data) >= 8 and msg.data[0:8] == b'\x89PNG\r\n\x1a\n':
                     collected_data = bytearray()
                     bytes_received = 0
@@ -81,11 +87,10 @@ def receive_image_over_can(port, bitrate, stop_event):
                         print(
                             f"Empfangen: {bytes_received}/{expected_size} Bytes")
 
-                    # Nur validieren wenn die erwartete Größe erreicht ist
                     if bytes_received >= expected_size:
                         try:
                             Image.open(io.BytesIO(collected_data)).verify()
-                            with open('received_colorbars.png', 'wb') as f:
+                            with open(image_path, 'wb') as f:
                                 f.write(collected_data)
                             print(
                                 f"Bild erfolgreich gespeichert ({bytes_received} Bytes)")

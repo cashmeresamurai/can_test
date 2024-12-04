@@ -6,6 +6,9 @@ import threading
 import time
 from PIL import Image
 import io
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def send_can_frames(port, bitrate, stop_event):
@@ -40,7 +43,7 @@ def send_can_frames(port, bitrate, stop_event):
     bus.shutdown()
 
 
-def send_image_over_can(port, bitrate, stop_event, image_path="colorbars.png"):
+def send_image_over_can(port, bitrate, stop_event):
     try:
         bus = can.interface.Bus(
             interface='slcan',
@@ -48,6 +51,9 @@ def send_image_over_can(port, bitrate, stop_event, image_path="colorbars.png"):
             rtscts=True,
             bitrate=bitrate
         )
+
+        # Konstruiere den korrekten Pfad für das Bild
+        image_path = BASE_DIR / "can_test/static/colorbars.png"
 
         with Image.open(image_path) as img:
             img_byte_array = io.BytesIO()
@@ -75,7 +81,7 @@ def send_image_over_can(port, bitrate, stop_event, image_path="colorbars.png"):
                 bus.send(msg)
                 frames_sent += 1
 
-                if frames_sent % 50 == 0:  # Status alle 50 Frames
+                if frames_sent % 50 == 0:
                     elapsed = time.time() - start_time
                     print(
                         f"Gesendet: {frames_sent}/{total_frames} Frames ({(frames_sent/total_frames*100):.1f}%) in {elapsed:.1f}s")
@@ -84,7 +90,7 @@ def send_image_over_can(port, bitrate, stop_event, image_path="colorbars.png"):
 
             print(
                 f"Übertragung abgeschlossen nach {time.time() - start_time:.1f} Sekunden")
-            break  # Beende nach einem kompletten Durchlauf
+            break
 
     except Exception as e:
         print(f"Fehler beim Senden: {e}")
