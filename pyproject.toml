@@ -38,6 +38,8 @@ dependencies = [
     "result",
     "typing-extensions",
     "uvicorn",
+    "screeninfo>=0.8.1",
+    "pymonctl>=0.92",
 ]
 
 [tool.setuptools]

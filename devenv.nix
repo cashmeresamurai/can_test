@@ -24,6 +24,8 @@
     llvmPackages_12.clang-unwrapped
     linuxHeaders
     cargo
+    xorg.xrandr
+    xorg.xset
   ];
 
   languages.python = {

@@ -125,7 +125,6 @@ async def stop_send():
 async def send_receive_1(request: Request):
     global pruefgeraet, pruefhilfsmittel
 
-
     # Starte Empfang auf Prüfgerät
     receive_result = await receive_bytes(pruefgeraet)
     if isinstance(receive_result, Err):
@@ -170,7 +169,6 @@ async def send_receive_1(request: Request):
 async def send_receive_2(request: Request):
     global pruefgeraet, pruefhilfsmittel
 
-
     # Starte Empfang auf Prüfgerät
     receive_result = await receive_bytes(pruefhilfsmittel)
     if isinstance(receive_result, Err):
@@ -209,6 +207,7 @@ async def send_receive_2(request: Request):
                 "message": "Test 2: Kommunikation erfolgreich durchgeführt"
             }
         )
+
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -334,6 +333,14 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
             return Err("Es wurden mehr als zwei USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
 
     return Ok(filtered_devices)
+
+
+@app.get("/monitor-step-1")
+def monitor_step_1(request: Request):
+    data: Dict[str, Any] = {
+        "request": request
+    }
+    return templates.TemplateResponse(name="monitor_step_1.html", context=data)
 
 
 def main():
