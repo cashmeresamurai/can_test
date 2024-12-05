@@ -1,20 +1,18 @@
-from typing_extensions import Any, Dict, List
 import pymonctl as pmc
-import time
 from pprint import pprint
 from result import Ok, Err, Result
 
 
-def check_vga_adapter() -> Result[pmc.ScreenValue, str]:
-    monitors = pmc.getAllMonitorsDict()
-    pprint(f"len monitors: {len(monitors)}")
-    match len(monitors):
+async def check_vga_adapter() -> Result[pmc.ScreenValue, str]:
+    vgas = pmc.getAllMonitorsDict()
+    pprint(f"len vgas: {len(vgas)}")
+    match len(vgas):
         case 2:
-            monitor: pmc.ScreenValue = monitors["DP-2"]
-            return Ok(monitor)
-        case _:
+            vga: pmc.ScreenValue = vgas["DP-2"]
+            return Ok(vga)
+        case 1:
             return Err("Der DP-VGA Adapter konnte nicht gefunden werden. Bitte stellen Sie sicher dass Sie die Anweisungen richtig befolgt haben.")
-
-
-if __name__ == "__main__":
-    main()
+            # vga_1: pmc.ScreenValue = vgas["eDP-1"]
+            # return Ok(vga_1)
+        case _:
+            return Err("error no displays found")

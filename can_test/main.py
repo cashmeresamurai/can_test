@@ -1,5 +1,6 @@
 import asyncio
 from typing import Any, TypedDict
+from pymonctl import ScreenValue
 from typing_extensions import Dict, List
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,8 @@ import sys  # sys Modul importieren
 import os
 import threading
 from threading import Event
+
+from can_test.screen import check_vga_adapter
 from .scanner import FoundDevice, FoundDeviceError, initialize
 from .send import send_can_frames, send_image_over_can
 from .receive import receive_can_frames, receive_image_over_can
@@ -138,7 +141,7 @@ async def send_receive_1(request: Request):
 
     # Starte Senden auf Prüfhilfsmittel
     send_result = await send_bytes(pruefhilfsmittel)
-    await asyncio.sleep(10)
+    await asyncio.sleep(4)
     if isinstance(send_result, Err):
         # Stoppe den Empfang falls das Senden fehlschlägt
         await stop_receive()
@@ -182,7 +185,7 @@ async def send_receive_2(request: Request):
 
     # Starte Senden auf Prüfhilfsmittel
     send_result = await send_bytes(pruefgeraet)
-    await asyncio.sleep(10)
+    await asyncio.sleep(4)
     if isinstance(send_result, Err):
         # Stoppe den Empfang falls das Senden fehlschlägt
         await stop_receive()
@@ -335,12 +338,43 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
     return Ok(filtered_devices)
 
 
-@app.get("/monitor-step-1")
-def monitor_step_1(request: Request):
+@app.get("/vga-step-1")
+def vga_step_1(request: Request):
     data: Dict[str, Any] = {
         "request": request
     }
-    return templates.TemplateResponse(name="monitor_step_1.html", context=data)
+    return templates.TemplateResponse(name="vga_step_1.html", context=data)
+
+# {'colordepth': 24,
+#  'dpi': (158, 159),
+#  'frequency': 60.01,
+#  'id': 65,
+#  'is_primary': True,
+#  'orientation': <Orientation.ROTATE_0: 0>,
+#  'position': Point(x=0, y=0),
+#  'scale': (100.0, 100.0),
+#  'size': Size(width=1920, height=1080),
+#  'system_name': 'eDP-1',
+#  'workarea': Rect(left=0, top=41, right=1920, bottom=1039)}
+
+@app.get("/start-vga-check")
+async def vga_check(request: Request):
+    scan_result: Result[ScreenValue, str] = await check_vga_adapter()
+    if scan_result.is_ok():
+        result = scan_result.ok()
+        pprint(result)
+        data: Dict[str, Any] = {
+            "request": request,
+            "screen": result
+        }
+        return templates.TemplateResponse(name="vga_scan.html", context=data)
+    elif scan_result.is_err():
+        err = scan_result.unwrap_err()
+        data_err: Dict[str, Any] = {
+            "request": request,
+            "error_message": err
+        }
+        return components.TemplateResponse(name="error.html", context=data_err)
 
 
 def main():
