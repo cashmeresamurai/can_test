@@ -302,7 +302,7 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
             return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
 
         case 1:
-            return Err("Es nur ein USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+            return Err("Es wurde nur ein USB-CAN Gerät gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
 
         case 2:
             for found_device in devices:
