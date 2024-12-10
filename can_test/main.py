@@ -357,6 +357,7 @@ def vga_step_1(request: Request):
 #  'system_name': 'eDP-1',
 #  'workarea': Rect(left=0, top=41, right=1920, bottom=1039)}
 
+
 @app.get("/start-vga-check")
 async def vga_check(request: Request):
     scan_result: Result[ScreenValue, str] = await check_vga_adapter()
