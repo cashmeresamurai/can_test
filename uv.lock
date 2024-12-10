@@ -35,6 +35,7 @@ dependencies = [
     { name = "customtkinter" },
     { name = "darkdetect" },
     { name = "fastapi" },
+    { name = "fpdf" },
     { name = "idna" },
     { name = "jinja2" },
     { name = "msgpack" },
@@ -68,6 +69,7 @@ requires-dist = [
     { name = "customtkinter", specifier = "==5.2.2" },
     { name = "darkdetect", specifier = "==0.8.0" },
     { name = "fastapi" },
+    { name = "fpdf", specifier = ">=1.7.2" },
     { name = "idna", specifier = "==3.10" },
     { name = "jinja2" },
     { name = "msgpack", specifier = "==1.0.8" },
@@ -278,6 +280,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/93/72/d83b98cd106541e8f
 wheels = [
     { url = "https://files.pythonhosted.org/packages/52/b3/7e4df40e585df024fac2f80d1a2d579c854ac37109675db2b0cc22c0bb9e/fastapi-0.115.6-py3-none-any.whl", hash = "sha256:e9240b29e36fa8f4bb7290316988e90c381e5092e0cbe84e7818cc3713bcf305", size = 94843 },
 ]
+
+[[package]]
+name = "fpdf"
+version = "1.7.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/c6/608a9e6c172bf9124aa687ec8b9f0e8e5d697d59a5f4fad0e2d5ec2a7556/fpdf-1.7.2.tar.gz", hash = "sha256:125840783289e7d12552b1e86ab692c37322e7a65b96a99e0ea86cca041b6779", size = 39504 }
 
 [[package]]
 name = "h11"

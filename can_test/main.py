@@ -227,6 +227,11 @@ def step_2(request: Request):
     return templates.TemplateResponse("step_2.html", {"request": request})
 
 
+@app.get("/create-report", response_class=HTMLResponse)
+def create_report(request: Request):
+    return templates.TemplateResponse("create_report.html", {"request": request})
+
+
 @app.get("/step-3", response_class=HTMLResponse)
 def step_3(request: Request):
     return templates.TemplateResponse("step_3.html", {"request": request})
