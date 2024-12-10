@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import Any, TypedDict
 from pymonctl import ScreenValue
 from typing_extensions import Dict, List
@@ -15,6 +16,7 @@ import os
 import threading
 from threading import Event
 
+from can_test.report import ErrorReport, ScanReport
 from can_test.screen import check_vga_adapter
 from .scanner import FoundDevice, FoundDeviceError, initialize
 from .send import send_can_frames, send_image_over_can
@@ -59,7 +61,6 @@ pruefgeraet: TestDevice = None
 async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
     try:
         global receive_stop_event, receive_thread
-
         receive_stop_event = Event()
         receive_thread = threading.Thread(
             target=receive_image_over_can,
@@ -67,7 +68,15 @@ async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
         )
         receive_thread.start()
         return Ok(True)
-    except:
+    except Exception as e:
+        error_report = ErrorReport()
+        status = {
+            "device_name": test_device["name"],
+            "device_port": test_device["port"],
+            "receive_thread_active": receive_thread is not None if receive_thread else False,
+            "stop_event_set": receive_stop_event.is_set() if receive_stop_event else False
+        }
+        error_report.generate_report("receive_bytes", str(e), status)
         receive_stop_event = None
         receive_thread = None
         return Err(f"Der Startvorgang für {test_device['name']} konnte nicht gestartet werden.")
@@ -94,13 +103,6 @@ async def stop_receive() -> Result[bool, str]:
 async def send_bytes(test_device: TestDevice) -> Result[bool, str]:
     try:
         global send_stop_event, send_thread
-
-        # if send_thread and send_thread.is_alive():
-        #     return {
-        #         "success": False,
-        #         "message": "Senden läuft bereits"
-        #     }
-
         send_stop_event = Event()
         send_thread = threading.Thread(
             target=send_image_over_can,
@@ -108,7 +110,15 @@ async def send_bytes(test_device: TestDevice) -> Result[bool, str]:
         )
         send_thread.start()
         return Ok(True)
-    except:
+    except Exception as e:
+        error_report = ErrorReport()
+        status = {
+            "device_name": test_device["name"],
+            "device_port": test_device["port"],
+            "send_thread_active": send_thread is not None if send_thread else False,
+            "stop_event_set": send_stop_event.is_set() if send_stop_event else False
+        }
+        error_report.generate_report("send_bytes", str(e), status)
         send_stop_event = None
         send_thread = None
         return Err(f"Der Startvorgang für das Senden des Testbilds für '{test_device['name']}' konnte nicht gestartet werden")
@@ -240,8 +250,16 @@ def step_3(request: Request):
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
     initialize_result: Result[Dict[str, Any], str] = initialize()
+
     if isinstance(initialize_result, Err):
         error_message: str = initialize_result.unwrap_err()
+        report = ScanReport()
+        scan_status = {
+            "initialization": "failed",
+            "error_type": "initialization_error",
+            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        report.generate_report(error_message, scan_status)
         data: Dict[str, Any] = {
             "request": request,
             "error_message": error_message
@@ -250,43 +268,69 @@ async def start_scan(request: Request):
             name="components/error.html",
             context=data,
         )
+
     elif isinstance(initialize_result, Ok):
-        untyped_devices: Dict[str, Any] = initialize_result.ok()
-        devices_result: List[Dict[str, str]] = untyped_devices["devices"]
-        ports: List[str] = untyped_devices.get(
-            "ports", ['/dev/ttyUSB0', '/dev/ttyUSB1'])
-        typed_device_list: List[Device] = []
+        try:
+            untyped_devices: Dict[str, Any] = initialize_result.ok()
+            devices_result: List[Dict[str, str]] = untyped_devices["devices"]
+            ports: List[str] = untyped_devices.get(
+                "ports", ['/dev/ttyUSB0', '/dev/ttyUSB1'])
+            typed_device_list: List[Device] = []
 
-        for i, device in enumerate(devices_result):
-            device_result = device.unwrap()
-            typed_device: Device = {
-                "serial_number": device_result["serial_number"],
-                "hardware": device_result["hardware"],
-                "firmware": device_result["firmware"],
-                "status": device_result["status"],
-                "port": ports[i] if i < len(ports) else f"/dev/ttyUSB{i}"
-            }
-            typed_device_list.append(typed_device)
-
-        devices: Result[List[Device], str] = filter_devices(
-            devices=typed_device_list)
-        if devices.is_err():
-            error_message1: str = devices.unwrap_err()
-            err_data: Dict[str, Any] = {
-                "request": request,
-                "error_message": error_message1
-            }
-            return components.TemplateResponse(name="error.html",
-                                               context=err_data)
-        elif devices.is_ok():
-            return templates.TemplateResponse(
-                "components/start_scan.html",
-                {
-                    "request": request,
-                    "devices": devices.ok(),
-                    "status": "success",
-                    "error": None
+            for i, device in enumerate(devices_result):
+                device_result = device.unwrap()
+                typed_device: Device = {
+                    "serial_number": device_result["serial_number"],
+                    "hardware": device_result["hardware"],
+                    "firmware": device_result["firmware"],
+                    "status": device_result["status"],
+                    "port": ports[i] if i < len(ports) else f"/dev/ttyUSB{i}"
                 }
+                typed_device_list.append(typed_device)
+
+            devices: Result[List[Device], str] = filter_devices(
+                devices=typed_device_list)
+
+            if devices.is_err():
+                error_message1: str = devices.unwrap_err()
+                report = ScanReport()
+                scan_status = {
+                    "initialization": "success",
+                    "device_filtering": "failed",
+                    "found_devices": len(typed_device_list),
+                    "error_type": "device_filter_error",
+                    "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                report.generate_report(error_message1, scan_status)
+                err_data: Dict[str, Any] = {
+                    "request": request,
+                    "error_message": error_message1
+                }
+                return components.TemplateResponse(name="error.html",
+                                                   context=err_data)
+            elif devices.is_ok():
+                return templates.TemplateResponse(
+                    "components/start_scan.html",
+                    {
+                        "request": request,
+                        "devices": devices.ok(),
+                        "status": "success",
+                        "error": None
+                    }
+                )
+
+        except Exception as e:
+            report = ScanReport()
+            scan_status = {
+                "initialization": "success",
+                "error_type": "processing_error",
+                "error_details": str(e),
+                "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            report.generate_report(str(e), scan_status)
+            return templates.TemplateResponse(
+                name="components/error.html",
+                context={"request": request, "error_message": str(e)}
             )
 
 

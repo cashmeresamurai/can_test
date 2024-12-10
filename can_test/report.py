@@ -29,3 +29,29 @@ class ErrorReport:
         # Save to Desktop
         filename = f"error_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         self.pdf.output(os.path.join(self.desktop, filename))
+
+
+class ScanReport:
+    def __init__(self):
+        self.pdf = FPDF()
+        self.desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+
+    def generate_report(self, error_message: str, scan_status: dict):
+        self.pdf.add_page()
+        self.pdf.set_font("Arial", size=12)
+
+        # Header
+        self.pdf.cell(
+            200, 10, txt=f"CAN-Scan Fehlerbericht - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=1, align="C")
+
+        # Error Info
+        self.pdf.cell(200, 10, txt=f"Fehler: {error_message}", ln=1, align="L")
+
+        # Status Info
+        self.pdf.cell(200, 10, txt="Scan Status:", ln=1, align="L")
+        for key, value in scan_status.items():
+            self.pdf.cell(200, 10, txt=f"{key}: {value}", ln=1, align="L")
+
+        # Save to Desktop
+        filename = f"can_scan_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        self.pdf.output(os.path.join(self.desktop, filename))
