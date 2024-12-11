@@ -57,6 +57,7 @@ send_stop_event = None
 send_thread = None
 pruefhilfsmittel: TestDevice = None
 pruefgeraet: TestDevice = None
+can_status = None
 
 
 async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
@@ -238,9 +239,6 @@ def step_2(request: Request):
     return templates.TemplateResponse("step_2.html", {"request": request})
 
 
-@app.get("/create-report", response_class=HTMLResponse)
-def create_report(request: Request):
-    return templates.TemplateResponse("create_report.html", {"request": request})
 
 
 @app.get("/step-3", response_class=HTMLResponse)
@@ -250,18 +248,19 @@ def step_3(request: Request):
 
 @app.get("/start-scan", response_class=HTMLResponse)
 async def start_scan(request: Request):
+    global can_status
     initialize_result: Result[Dict[str, Any], str] = initialize()
 
     if isinstance(initialize_result, Err):
         error_message: str = initialize_result.unwrap_err()
         print("error message:")
         print(f"{error_message}")
-        scan_status = {
+        can_status = {
             "Status": "Fehlgeschlagen",
             "Fehler": error_message,
             "Datum": datetime.now().strftime('%d.%m.%Y %H:%M:%S')
-        } 
-        report = TestReport(can_report=scan_status)
+        }
+        report = TestReport(can_report=can_status)
         report.main()
         data: Dict[str, Any] = {
             "request": request,
@@ -296,14 +295,14 @@ async def start_scan(request: Request):
 
             if devices.is_err():
                 error_message1: str = devices.unwrap_err()
-                scan_status = {
+                can_status = {
                     "Status": "Fehlgeschlagen",
                     "device_filtering": "failed",
                     "Fehlermeldung": error_message1,
                     "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
-                report = TestReport(can_report=scan_status)
-                report.main()
+                # report = TestReport(can_report=scan_status)
+                # report.main()
                 err_data: Dict[str, Any] = {
                     "request": request,
                     "error_message": error_message1
@@ -313,13 +312,13 @@ async def start_scan(request: Request):
             elif devices.is_ok():
                 devices_report: List[Device] = devices.ok()
 
-                scan_status = {
+                can_status = {
                     "Status": "Erfolgreich",
                     "devices": devices.ok(),
                     "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
-                report = TestReport(can_report=scan_status)
-                report.main()
+                # report = TestReport(can_report=scan_status)
+                # report.main()
                 return templates.TemplateResponse(
                     "components/start_scan.html",
                     {
@@ -332,13 +331,13 @@ async def start_scan(request: Request):
 
         except Exception as e:
             report = ScanReport()
-            scan_status = {
+            can_status = {
                 "initialization": "success",
                 "error_type": "processing_error",
                 "error_details": str(e),
                 "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-            report.generate_report(str(e), scan_status)
+            report.generate_report(str(e), can_status)
             return templates.TemplateResponse(
                 name="components/error.html",
                 context={"request": request, "error_message": str(e)}
@@ -437,6 +436,12 @@ async def vga_check(request: Request):
         }
         return components.TemplateResponse(name="error.html", context=data_err)
 
+@app.get("/create-report", response_class=HTMLResponse)
+def create_report(request: Request):
+    global can_status
+    report = TestReport(can_report=can_status)
+    report.main()
+    return templates.TemplateResponse("create_report.html", {"request": request})
 
 def main():
     uvicorn.run(app, host="0.0.0.0", port=8000, )

@@ -63,7 +63,7 @@ class ScanReport:
 class TestReport:
     def __init__(self, can_report: Dict[str, Any]):
         self.pdf = FPDF()
-        self.can_report = can_report 
+        self.can_report = can_report
 
     def set_header(self):
         # Header
@@ -78,7 +78,7 @@ class TestReport:
         self.pdf.cell(w=200, h=10, txt="CAN Test Ergebnis", ln=1, align="L")
 
         for key, value in self.can_report.items():
-                  
+
             if value == "Erfolgreich":
                 for device in devices:
                     for key, value in device.items():
@@ -93,7 +93,7 @@ class TestReport:
 
     def save_report(self):
         filename = f"can_scan_report_{datetime.now().strftime('%d_%m_%Y_%H%M%S')}.pdf"
-        self.pdf.output(os.path.join("/home/stryker/Schreibtisch/Test Report", filename))
+        self.pdf.output(os.path.join("/home/sakura/Desktop/Test Report", filename))
 
     def main(self):
         self.set_header()
