@@ -6,7 +6,7 @@ import os
 class ErrorReport:
     def __init__(self):
         self.pdf = FPDF()
-        self.desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        self.desktop = os.path.join(os.path.expanduser("~"), "Schreibtisch")
 
     def generate_report(self, function_name: str, error_message: str, status: dict):
         self.pdf.add_page()
