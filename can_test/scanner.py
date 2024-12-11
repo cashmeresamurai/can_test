@@ -433,13 +433,14 @@ def initialize() -> Result[Dict[str, Any], str]:
     port_list_result: Result[List["str"], str] = find_all_usb_can_devices()
     print(port_list_result)
     if isinstance(port_list_result, Err):
-        return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass sie die Anweisungen richtig befolgt haben und starten sie den Scan erneut.")
+        return Err("Es wurden keine USB-CAN Geräte gefunden.")
+
 
     port_list = port_list_result
     if not port_list:
         if sys.platform.startswith('linux'):
             get_system_info()
-        return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass sie die Anweisungen richtig befolgt haben und starten sie den Scan erneut.")
+        return Err("Es wurden keine USB-CAN Geräte gefunden.")
 
     devices_info: List[Result[FoundDevice, FoundDeviceError]] = []
     for device in port_list.unwrap():

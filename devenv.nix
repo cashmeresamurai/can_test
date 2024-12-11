@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{pkgs, ... }:
 
 {
   packages = with pkgs; [
@@ -26,6 +26,10 @@
     cargo
     xorg.xrandr
     xorg.xset
+    vscodium-fhs
+    direnv
+    gh
+    lazygit
   ];
 
   languages.python = {

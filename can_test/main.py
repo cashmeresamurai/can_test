@@ -21,6 +21,7 @@ from can_test.screen import check_vga_adapter
 from .scanner import FoundDevice, FoundDeviceError, initialize
 from .send import send_can_frames, send_image_over_can
 from .receive import receive_can_frames, receive_image_over_can
+from .report import TestReport
 from pprint import pprint
 
 import os
@@ -253,13 +254,15 @@ async def start_scan(request: Request):
 
     if isinstance(initialize_result, Err):
         error_message: str = initialize_result.unwrap_err()
-        report = ScanReport()
+        print("error message:")
+        print(f"{error_message}")
         scan_status = {
-            "initialization": "failed",
-            "error_type": "initialization_error",
-            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        report.generate_report(error_message, scan_status)
+            "Status": "Fehlgeschlagen",
+            "Fehler": error_message,
+            "Datum": datetime.now().strftime('%d.%m.%Y %H:%M:%S')
+        } 
+        report = TestReport(can_report=scan_status)
+        report.main()
         data: Dict[str, Any] = {
             "request": request,
             "error_message": error_message
@@ -293,15 +296,14 @@ async def start_scan(request: Request):
 
             if devices.is_err():
                 error_message1: str = devices.unwrap_err()
-                report = ScanReport()
                 scan_status = {
-                    "initialization": "success",
+                    "Status": "Fehlgeschlagen",
                     "device_filtering": "failed",
-                    "found_devices": len(typed_device_list),
-                    "error_type": "device_filter_error",
+                    "Fehlermeldung": error_message1,
                     "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
-                report.generate_report(error_message1, scan_status)
+                report = TestReport(can_report=scan_status)
+                report.main()
                 err_data: Dict[str, Any] = {
                     "request": request,
                     "error_message": error_message1
@@ -309,6 +311,15 @@ async def start_scan(request: Request):
                 return components.TemplateResponse(name="error.html",
                                                    context=err_data)
             elif devices.is_ok():
+                devices_report: List[Device] = devices.ok()
+
+                scan_status = {
+                    "Status": "Erfolgreich",
+                    "devices": devices.ok(),
+                    "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                report = TestReport(can_report=scan_status)
+                report.main()
                 return templates.TemplateResponse(
                     "components/start_scan.html",
                     {
@@ -348,10 +359,10 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
     filtered_devices: List[Device] = []
     match len(devices):
         case 0:
-            return Err("Es wurden keine USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+            return Err("Es wurden keine USB-CAN Geräte gefunden.")
 
         case 1:
-            return Err("Es wurde nur ein USB-CAN Gerät gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+            return Err("Es wurde nur ein USB-CAN Gerät gefunden.")
 
         case 2:
             for found_device in devices:
@@ -382,7 +393,7 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
                 }
                 filtered_devices.append(device)
         case _:
-            return Err("Es wurden mehr als zwei USB-CAN Geräte gefunden. Bitte stellen Sie sicher, dass Sie die Anweisungen richtig befolgt haben und starten sie den Test erneut.")
+            return Err("Es wurden mehr als zwei USB-CAN Geräte gefunden.")
 
     return Ok(filtered_devices)
 
