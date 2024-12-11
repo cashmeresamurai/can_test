@@ -58,6 +58,8 @@ send_thread = None
 pruefhilfsmittel: TestDevice = None
 pruefgeraet: TestDevice = None
 can_status = None
+videosignal_1 = None
+videosignal_2 = None
 
 
 async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
@@ -237,8 +239,6 @@ def step_1(request: Request):
 @app.get("/step-2", response_class=HTMLResponse)
 def step_2(request: Request):
     return templates.TemplateResponse("step_2.html", {"request": request})
-
-
 
 
 @app.get("/step-3", response_class=HTMLResponse)
@@ -436,12 +436,14 @@ async def vga_check(request: Request):
         }
         return components.TemplateResponse(name="error.html", context=data_err)
 
+
 @app.get("/create-report", response_class=HTMLResponse)
 def create_report(request: Request):
     global can_status
     report = TestReport(can_report=can_status)
     report.main()
     return templates.TemplateResponse("create_report.html", {"request": request})
+
 
 def main():
     uvicorn.run(app, host="0.0.0.0", port=8000, )

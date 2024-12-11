@@ -73,27 +73,55 @@ class TestReport:
         self.pdf.cell(w=200, h=10, txt="Test Report", ln=1, align="C")
 
     def write_can_report(self):
+        """
+        Erstellt einen formatierten CAN Test Report im PDF Format
+        """
+        # Schriftgröße setzen
         self.pdf.set_font_size(14)
 
+        # Test Report Header
+        self.pdf.cell(w=200, h=10, txt="Test Report", ln=1, align="L")
+
+        # CAN Test Ergebnis Header
         self.pdf.cell(w=200, h=10, txt="CAN Test Ergebnis", ln=1, align="L")
 
-        for key, value in self.can_report.items():
+        # Status und Timestamp
+        if "status" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Status: {self.can_report['status']}", ln=1, align="L")
 
-            if value == "Erfolgreich":
-                for device in devices:
-                    for key, value in device.items():
-                        if key == "serial_number" and value == "380105787":
-                            self.pdf.cell(200, 10, txt=f"Gerät: Prüfmittel", ln=1, align="L")
-                        elif key == "serial_number" and value != "380105787":
-                            self.pdf.cell(200, 10, txt=f"Gerät: Prüfgerät", ln=1, align="L")
-                        else:
-                            pass
-                        self.pdf.cell(200, 10, txt=f"{key}: {value}", ln=1, align="L")
-            self.pdf.cell(200, 10, txt=f"{key}: {value}", ln=1, align="L")
+        if "timestamp" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"timestamp: {self.can_report['timestamp']}", ln=1, align="L")
+
+        # Wenn Geräte vorhanden sind
+        if "devices" in self.can_report:
+            # Überschrift für Geräteliste
+            self.pdf.cell(w=200, h=10, txt="Getestete Geräte:",
+                          ln=1, align="L")
+
+            # Iteration über alle Geräte
+            for device in self.can_report["devices"]:
+                # Gerätetyp bestimmen
+                if device.get("serial_number") == "380105787":
+                    self.pdf.cell(
+                        w=200, h=10, txt="Gerät: Prüfmittel", ln=1, align="L")
+                else:
+                    self.pdf.cell(
+                        w=200, h=10, txt="Gerät: Prüfgerät", ln=1, align="L")
+
+                # Geräteinformationen ausgeben
+                for key, value in device.items():
+                    self.pdf.cell(
+                        w=200, h=10, txt=f"{key}: {value}", ln=1, align="L")
+
+                # Leerzeile zwischen Geräten
+                self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
 
     def save_report(self):
         filename = f"can_scan_report_{datetime.now().strftime('%d_%m_%Y_%H%M%S')}.pdf"
-        self.pdf.output(os.path.join("/home/sakura/Desktop/Test Report", filename))
+        self.pdf.output(os.path.join(
+            "/home/sakura/Desktop/Test Report", filename))
 
     def main(self):
         self.set_header()
