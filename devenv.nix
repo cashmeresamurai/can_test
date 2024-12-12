@@ -43,7 +43,7 @@
   };
 
   env = {
-    # UV_PYTHON = "${pkgs.python311}/bin/python3.11";
+    #    # UV_PYTHON = "${pkgs.python311}/bin/python3.11";
     LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH";
     LIBCLANG_PATH = "${pkgs.llvmPackages_12.clang-unwrapped.lib}/lib";
     BINDGEN_EXTRA_CLANG_ARGS = "-I${pkgs.linuxHeaders}/include";
