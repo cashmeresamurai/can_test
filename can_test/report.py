@@ -115,7 +115,8 @@ class TestReport:
     def main(self):
         self.set_header()
         print(f"{self.can_report}")
-        self.write_can_report()
+        if self.can_report != None:
+            self.write_can_report()
         if self.videosignal_1 != None:
             self.generate_videosignal_report_1()
 
