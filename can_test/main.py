@@ -281,8 +281,6 @@ async def start_scan(request: Request):
             "Fehler": error_message,
             "Datum": datetime.now().strftime('%d.%m.%Y %H:%M:%S')
         }
-        report = TestReport(can_report=can_status)
-        report.main()
         data: Dict[str, Any] = {
             "request": request,
             "error_message": error_message
@@ -470,7 +468,8 @@ async def vga_check(request: Request):
 @app.get("/create-report", response_class=HTMLResponse)
 def create_report(request: Request):
     global can_status
-    report = TestReport(can_report=can_status)
+    report = TestReport(can_report=can_status, videosignal_1=videosignal_1,
+                        videosignal_2=videosignal_2, vga_status=vga_status)
     report.main()
     return templates.TemplateResponse("create_report.html", {"request": request})
 

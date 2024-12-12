@@ -6,10 +6,10 @@ from typing_extensions import Dict, Any
 
 class TestReport:
     def __init__(self,
-                 can_report: Dict[str, Any],
-                 videosignal_1: Dict[str, Any],
-                 videosignal_2: Dict[str, Any],
-                 vga_status: Dict[str, Any]
+                 can_report,
+                 videosignal_1,
+                 videosignal_2,
+                 vga_status
                  ):
         self.pdf = FPDF()
         self.can_report = can_report
@@ -116,6 +116,12 @@ class TestReport:
         self.set_header()
         print(f"{self.can_report}")
         self.write_can_report()
+        if self.videosignal_1 != None:
+            self.generate_videosignal_report_1()
+
+        if self.videosignal_2 != None:
+            self.generate_videosignal_report_2()
+
+        if self.vga_status != None:
+            self.generate_vga_report()
         self.save_report()
-        self.generate_videosignal_report_1()
-        self.generate_videosignal_report_2()
