@@ -31,32 +31,54 @@ class TestReport:
         # Schriftgröße setzen
         self.pdf.set_font_size(14)
 
-        # Test Report Header
-        self.pdf.cell(w=200, h=10, txt="Test Report", ln=1, align="L")
-
         # CAN Test Ergebnis Header
         self.pdf.cell(w=200, h=10, txt="CAN Test Ergebnis", ln=1, align="L")
 
         self.pdf.set_font_size(12)
 
         # Status und Timestamp
-        if "status" in self.can_report:
+        if "Status" in self.can_report:
             self.pdf.cell(
-                w=200, h=10, txt=f"Status: {self.can_report['status']}", ln=1, align="L")
+                w=200, h=10, txt=f"Status: {self.can_report['Status']}", ln=1, align="L")
 
         if "timestamp" in self.can_report:
             self.pdf.cell(
-                w=200, h=10, txt=f"timestamp: {self.can_report['timestamp']}", ln=1, align="L")
+                w=200, h=10, txt=f"Zeitpunkt: {self.can_report['timestamp']}", ln=1, align="L")
+        elif "Datum" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Zeitpunkt: {self.can_report['Datum']}", ln=1, align="L")
+
+        # Alle möglichen Fehlermeldungen
+        if "Fehler" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Fehlermeldung: {self.can_report['Fehler']}", ln=1, align="L")
+
+        if "Fehlermeldung" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Fehlermeldung: {self.can_report['Fehlermeldung']}", ln=1, align="L")
+
+        if "error_details" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Fehlerdetails: {self.can_report['error_details']}", ln=1, align="L")
+
+        if "error_type" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Fehlertyp: {self.can_report['error_type']}", ln=1, align="L")
+
+        if "device_filtering" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Gerätefilterung: {self.can_report['device_filtering']}", ln=1, align="L")
+
+        if "initialization" in self.can_report:
+            self.pdf.cell(
+                w=200, h=10, txt=f"Initialisierung: {self.can_report['initialization']}", ln=1, align="L")
 
         # Wenn Geräte vorhanden sind
         if "devices" in self.can_report:
-            # Überschrift für Geräteliste
             self.pdf.cell(w=200, h=10, txt="Getestete Geräte:",
                           ln=1, align="L")
 
-            # Iteration über alle Geräte
             for device in self.can_report["devices"]:
-                # Gerätetyp bestimmen
                 if device.get("serial_number") == "380105787":
                     self.pdf.cell(
                         w=200, h=10, txt="Gerät: Prüfmittel", ln=1, align="L")
@@ -64,13 +86,15 @@ class TestReport:
                     self.pdf.cell(
                         w=200, h=10, txt="Gerät: Prüfgerät", ln=1, align="L")
 
-                # Geräteinformationen ausgeben
                 for key, value in device.items():
                     self.pdf.cell(
                         w=200, h=10, txt=f"{key}: {value}", ln=1, align="L")
 
                 # Leerzeile zwischen Geräten
                 self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
+
+        # Abschließende Leerzeile
+        self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
 
     def generate_videosignal_report_1(self):
         self.pdf.set_font_size(14)
@@ -116,15 +140,18 @@ class TestReport:
 
     def main(self):
         self.set_header()
-        print(f"{self.can_report}")
-        if self.can_report != None:
+        if self.can_report is not None:
             self.write_can_report()
-        if self.videosignal_1 != None:
+            # Leerzeile nach dem CAN Report
+            self.pdf.cell(w=200, h=10, txt="", ln=1, align="L")
+
+        if self.videosignal_1 is not None:
             self.generate_videosignal_report_1()
 
-        if self.videosignal_2 != None:
+        if self.videosignal_2 is not None:
             self.generate_videosignal_report_2()
 
-        if self.vga_status != None:
+        if self.vga_status is not None:
             self.generate_vga_report()
+
         self.save_report()

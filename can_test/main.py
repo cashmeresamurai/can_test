@@ -349,14 +349,6 @@ async def start_scan(request: Request):
                 )
 
         except Exception as e:
-            report = ScanReport()
-            can_status = {
-                "initialization": "success",
-                "error_type": "processing_error",
-                "error_details": str(e),
-                "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
-            report.generate_report(str(e), can_status)
             return templates.TemplateResponse(
                 name="components/error.html",
                 context={"request": request, "error_message": str(e)}

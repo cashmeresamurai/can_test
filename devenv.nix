@@ -1,6 +1,9 @@
-{pkgs, ... }:
+{ pkgs, ... }:
 
 {
+  processes = {
+    can_test.exec = "uv run can_test";
+  };
   packages = with pkgs; [
     stdenv.cc.cc.lib
     pyright
