@@ -60,6 +60,7 @@ pruefgeraet: TestDevice = None
 can_status = None
 videosignal_1 = None
 videosignal_2 = None
+vga_status = None
 
 
 async def receive_bytes(test_device: TestDevice) -> Result[bool, str]:
@@ -140,7 +141,7 @@ async def stop_send():
 
 @app.get("/can-send-receive-1", response_class=HTMLResponse)
 async def send_receive_1(request: Request):
-    global pruefgeraet, pruefhilfsmittel
+    global pruefgeraet, pruefhilfsmittel, videosignal_1
 
     # Starte Empfang auf Prüfgerät
     receive_result = await receive_bytes(pruefgeraet)
@@ -159,6 +160,10 @@ async def send_receive_1(request: Request):
     if isinstance(send_result, Err):
         # Stoppe den Empfang falls das Senden fehlschlägt
         await stop_receive()
+        videosignal_1 = {
+            "Status": "Fehlgeschlagen",
+            "Grund": send_result.unwrap_err()
+        }
         return templates.TemplateResponse(
             "components/error.html",
             {
@@ -173,22 +178,33 @@ async def send_receive_1(request: Request):
         await stop_receive()
         await stop_send()
 
+        videosignal_1 = {
+            "Status": "Erfolgreich",
+            "Grund": "Kommunikation erfolgreich durchgeführt"
+        }
+
         return templates.TemplateResponse(
             "components/success_1.html",
             {
                 "request": request,
-                "message": "Test 1: Kommunikation erfolgreich durchgeführt"
+                "message": "Videosignaltest 1: Kommunikation erfolgreich durchgeführt"
             }
         )
 
 
 @app.get("/can-send-receive-2", response_class=HTMLResponse)
 async def send_receive_2(request: Request):
-    global pruefgeraet, pruefhilfsmittel
+    global pruefgeraet, pruefhilfsmittel, videosignal_2
 
     # Starte Empfang auf Prüfgerät
     receive_result = await receive_bytes(pruefhilfsmittel)
     if isinstance(receive_result, Err):
+
+        videosignal_2 = {
+            "Status": "Fehlgeschlagen",
+            "Grund": receive_result.unwrap_err()
+        }
+
         return templates.TemplateResponse(
             "components/error.html",
             {
@@ -203,6 +219,7 @@ async def send_receive_2(request: Request):
     if isinstance(send_result, Err):
         # Stoppe den Empfang falls das Senden fehlschlägt
         await stop_receive()
+
         return templates.TemplateResponse(
             "components/error.html",
             {
@@ -216,6 +233,11 @@ async def send_receive_2(request: Request):
         # Stoppe beide Operationen
         await stop_receive()
         await stop_send()
+
+        videosignal_2 = {
+            "Status": "Erfolgreich",
+            "Grund": "Kommunikation erfolgreich durchgeführt"
+        }
 
         return templates.TemplateResponse(
             "components/success_2.html",
@@ -404,24 +426,27 @@ def vga_step_1(request: Request):
     }
     return templates.TemplateResponse(name="vga_step_1.html", context=data)
 
-# {'colordepth': 24,
-#  'dpi': (158, 159),
-#  'frequency': 60.01,
-#  'id': 65,
-#  'is_primary': True,
-#  'orientation': <Orientation.ROTATE_0: 0>,
-#  'position': Point(x=0, y=0),
-#  'scale': (100.0, 100.0),
-#  'size': Size(width=1920, height=1080),
-#  'system_name': 'eDP-1',
-#  'workarea': Rect(left=0, top=41, right=1920, bottom=1039)}
+
+@app.get("/vga-step-2")
+def vga_step_2(request: Request):
+    data: Dict[str, Any] = {
+        "request": request
+    }
+    return templates.TemplateResponse(name="vga_step_2.html", context=data)
 
 
 @app.get("/start-vga-check")
 async def vga_check(request: Request):
+    global vga_status
     scan_result: Result[ScreenValue, str] = await check_vga_adapter()
     if scan_result.is_ok():
         result = scan_result.ok()
+
+        vga_status = {
+            "Status": "Erfolgreich",
+            "Grund": result,
+        }
+
         pprint(result)
         data: Dict[str, Any] = {
             "request": request,
@@ -430,6 +455,12 @@ async def vga_check(request: Request):
         return templates.TemplateResponse(name="vga_scan.html", context=data)
     elif scan_result.is_err():
         err = scan_result.unwrap_err()
+
+        vga_status = {
+            "Status": "Fehlgeschlagen",
+            "Grund": err,
+        }
+
         data_err: Dict[str, Any] = {
             "request": request,
             "error_message": err
