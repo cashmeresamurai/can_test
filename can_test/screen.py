@@ -8,7 +8,7 @@ async def check_vga_adapter() -> Result[pmc.ScreenValue, str]:
     pprint(f"len vgas: {len(vgas)}")
     match len(vgas):
         case 2:
-            vga: pmc.ScreenValue = vgas["DP-2"]
+            vga: pmc.ScreenValue = vgas["DP-1"]
             return Ok(vga)
         case 1:
             return Err("Der DP-VGA Adapter konnte nicht gefunden werden.")
