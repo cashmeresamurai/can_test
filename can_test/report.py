@@ -37,6 +37,8 @@ class TestReport:
         # CAN Test Ergebnis Header
         self.pdf.cell(w=200, h=10, txt="CAN Test Ergebnis", ln=1, align="L")
 
+        self.pdf.set_font_size(12)
+
         # Status und Timestamp
         if "status" in self.can_report:
             self.pdf.cell(
