@@ -11,7 +11,7 @@ async def check_vga_adapter() -> Result[pmc.ScreenValue, str]:
             vga: pmc.ScreenValue = vgas["DP-2"]
             return Ok(vga)
         case 1:
-            return Err("Der DP-VGA Adapter konnte nicht gefunden werden. Bitte stellen Sie sicher dass Sie die Anweisungen richtig befolgt haben.")
+            return Err("Der DP-VGA Adapter konnte nicht gefunden werden.")
             # vga_1: pmc.ScreenValue = vgas["eDP-1"]
             # return Ok(vga_1)
         case _:
