@@ -16,7 +16,6 @@ import os
 import threading
 from threading import Event
 
-from can_test.report import ErrorReport, ScanReport
 from can_test.screen import check_vga_adapter
 from .scanner import FoundDevice, FoundDeviceError, initialize
 from .send import send_can_frames, send_image_over_can
