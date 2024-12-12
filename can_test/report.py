@@ -22,7 +22,7 @@ class TestReport:
         self.pdf.add_page()
         self.pdf.set_font("Arial", size=16)
 
-        self.pdf.cell(w=200, h=10, text="Test Report", ln=1, align="C")
+        self.pdf.cell(w=200, h=10, txt="Test Report", ln=1, align="C")
 
     def write_can_report(self):
         """
@@ -32,24 +32,24 @@ class TestReport:
         self.pdf.set_font_size(14)
 
         # Test Report Header
-        self.pdf.cell(w=200, h=10, text="Test Report", ln=1, align="L")
+        self.pdf.cell(w=200, h=10, txt="Test Report", ln=1, align="L")
 
         # CAN Test Ergebnis Header
-        self.pdf.cell(w=200, h=10, text="CAN Test Ergebnis", ln=1, align="L")
+        self.pdf.cell(w=200, h=10, txt="CAN Test Ergebnis", ln=1, align="L")
 
         # Status und Timestamp
         if "status" in self.can_report:
             self.pdf.cell(
-                w=200, h=10, text=f"Status: {self.can_report['status']}", ln=1, align="L")
+                w=200, h=10, txt=f"Status: {self.can_report['status']}", ln=1, align="L")
 
         if "timestamp" in self.can_report:
             self.pdf.cell(
-                w=200, h=10, text=f"timestamp: {self.can_report['timestamp']}", ln=1, align="L")
+                w=200, h=10, txt=f"timestamp: {self.can_report['timestamp']}", ln=1, align="L")
 
         # Wenn Geräte vorhanden sind
         if "devices" in self.can_report:
             # Überschrift für Geräteliste
-            self.pdf.cell(w=200, h=10, text="Getestete Geräte:",
+            self.pdf.cell(w=200, h=10, txt="Getestete Geräte:",
                           ln=1, align="L")
 
             # Iteration über alle Geräte
@@ -57,55 +57,55 @@ class TestReport:
                 # Gerätetyp bestimmen
                 if device.get("serial_number") == "380105787":
                     self.pdf.cell(
-                        w=200, h=10, text="Gerät: Prüfmittel", ln=1, align="L")
+                        w=200, h=10, txt="Gerät: Prüfmittel", ln=1, align="L")
                 else:
                     self.pdf.cell(
-                        w=200, h=10, text="Gerät: Prüfgerät", ln=1, align="L")
+                        w=200, h=10, txt="Gerät: Prüfgerät", ln=1, align="L")
 
                 # Geräteinformationen ausgeben
                 for key, value in device.items():
                     self.pdf.cell(
-                        w=200, h=10, text=f"{key}: {value}", ln=1, align="L")
+                        w=200, h=10, txt=f"{key}: {value}", ln=1, align="L")
 
                 # Leerzeile zwischen Geräten
-                self.pdf.cell(w=200, h=5, text="", ln=1, align="L")
+                self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
 
     def generate_videosignal_report_1(self):
         self.pdf.set_font_size(14)
 
-        self.pdf.cell(w=200, h=10, text=f"Videosignaltest 1", ln=1, align="L")
+        self.pdf.cell(w=200, h=10, txt=f"Videosignaltest 1", ln=1, align="L")
 
         self.pdf.set_font_size(12)
 
         for key, value in self.videosignal_1.items():
-            self.pdf.cell(w=200, h=10, text=f"{key}: {value}", ln=1, align="L")
+            self.pdf.cell(w=200, h=10, txt=f"{key}: {value}", ln=1, align="L")
 
-        self.pdf.cell(w=200, h=5, text="", ln=1, align="L")
+        self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
 
     def generate_videosignal_report_2(self):
         self.pdf.set_font_size(14)
 
-        self.pdf.cell(w=200, h=10, text=f"Videosignaltest 2", ln=1, align="L")
+        self.pdf.cell(w=200, h=10, txt=f"Videosignaltest 2", ln=1, align="L")
 
         self.pdf.set_font_size(12)
 
         for key, value in self.videosignal_2.items():
-            self.pdf.cell(w=200, h=10, text=f"{key}: {value}", ln=1, align="L")
+            self.pdf.cell(w=200, h=10, txt=f"{key}: {value}", ln=1, align="L")
 
-        self.pdf.cell(w=200, h=5, text="", ln=1, align="L")
+        self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
 
     def generate_vga_report(self):
         self.pdf.set_font_size(14)
 
         self.pdf.cell(
-            w=200, h=10, text="Q-Leica Display-Port Test", ln=1, align="L")
+            w=200, h=10, txt="Q-Leica Display-Port Test", ln=1, align="L")
 
         self.pdf.set_font_size(12)
 
         for key, value in self.vga_status.items():
-            self.pdf.cell(w=200, h=10, text=f"{key}: {value}", ln=1, align="L")
+            self.pdf.cell(w=200, h=10, txt=f"{key}: {value}", ln=1, align="L")
 
-        self.pdf.cell(w=200, h=5, text="", ln=1, align="L")
+        self.pdf.cell(w=200, h=5, txt="", ln=1, align="L")
 
     def save_report(self):
         filename = f"can_scan_report_{datetime.now().strftime('%d_%m_%Y_%H%M%S')}.pdf"
