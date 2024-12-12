@@ -1,7 +1,7 @@
-{config, pkgs, ...}:
+{ config, pkgs, ... }:
 {
   # Enable SNMP service
- # Install SNMP package
+  # Install SNMP package
   environment.systemPackages = with pkgs; [
     net-snmp
   ];
@@ -70,7 +70,7 @@
     "d /etc/snmp 0644 root root -"
     "d /var/lib/net-snmp 0600 root root -"
   ];
-  boot.kernelModules = [ "ftdi_sio" ];  # Add FTDI serial module
+  boot.kernelModules = [ "ftdi_sio" ]; # Add FTDI serial module
 
   # Add kernel packages
   boot.kernelPackages = pkgs.linuxPackages_latest;

@@ -56,11 +56,5 @@
       uv sync
     fi
     source .venv/bin/activate
-    uv run can_test &
-    # Warte kurz, damit der Server Zeit hat zu starten
-    sleep 2
-
-    # Starte Firefox im Hintergrund
-    firefox http://localhost:8000 &
   '';
 }
