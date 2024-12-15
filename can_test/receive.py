@@ -14,6 +14,7 @@ from pathlib import Path
 # Get the base directory (where pyproject.toml is)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 def receive_can_frames(port, bitrate, stop_event):
     """Receive CAN frames."""
     try:

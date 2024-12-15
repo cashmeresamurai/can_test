@@ -1,12 +1,13 @@
 <div class="flex flex-col items-center">
-  <h2>CAN-Prüfgerät anschließen</h2>
-  <h2>Schritt 3</h2>
-  <h3>LED-Status kontrollieren</h3>
-  <p>Nach dem Anschließen des USB-CAN an den Computer müssen folgende Lichter blinken:</p>
-  <p class="text-error">ERROR LED (oben): Sollte rot aufblinken</p>
-  <p class="text-success">DATA LED (unten): Sollte grün aufblinken</p>
-  <!-- <span class="loading loading-spinner loading-lg my-4"></span> -->
-  <img src="/static/step_3.gif" class="w-1/2 h-1/2" alt="">
+  <h2>Hardwareanschluss vorbereiten</h2>
+  <h2>Schritt 3 von 4</h2>
+  <h3>LED-Statusanzeige überprüfen</h3>
+  <p>Kontrollieren Sie nach dem Anschluss die korrekte LED-Signalisierung:</p>
+  <div class="status-check">
+    <p class="text-error"><strong>ERROR LED (obere Position):</strong> Rotes Aufblinken</p>
+    <p class="text-success"><strong>DATA LED (untere Position):</strong> Grünes Aufblinken</p>
+  </div>
+  <img src="/static/step_3.png" class="w-1/2 h-1/2" alt="LED-Positionen und Blinkmuster">
   <div class="join mt-4">
     <button class="join-item btn" hx-get="/step-2" hx-swap="innerHTML" hx-target="#instructions">Zurück</button>
     <button class="join-item btn" hx-get="/start-scan" hx-swap="innerHTML" hx-target="#instructions">Weiter</button>

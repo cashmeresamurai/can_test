@@ -153,14 +153,14 @@ async def send_receive_1(request: Request):
             }
         )
 
-    # Starte Senden auf Prüfhilfsmittel
+    # Starte Senden auf Prüfmittel
     send_result = await send_bytes(pruefhilfsmittel)
     await asyncio.sleep(4)
     if isinstance(send_result, Err):
         # Stoppe den Empfang falls das Senden fehlschlägt
         await stop_receive()
         videosignal_1 = {
-            "Status": "Fehlgeschlagen",
+            "Status": "fail",
             "Grund": send_result.unwrap_err()
         }
         return templates.TemplateResponse(
@@ -178,7 +178,7 @@ async def send_receive_1(request: Request):
         await stop_send()
 
         videosignal_1 = {
-            "Status": "Erfolgreich",
+            "Status": "pass",
             "Grund": "Kommunikation erfolgreich durchgeführt"
         }
 
@@ -200,7 +200,7 @@ async def send_receive_2(request: Request):
     if isinstance(receive_result, Err):
 
         videosignal_2 = {
-            "Status": "Fehlgeschlagen",
+            "Status": "fail",
             "Grund": receive_result.unwrap_err()
         }
 
@@ -212,7 +212,7 @@ async def send_receive_2(request: Request):
             }
         )
 
-    # Starte Senden auf Prüfhilfsmittel
+    # Starte Senden auf Prüfmittel
     send_result = await send_bytes(pruefgeraet)
     await asyncio.sleep(4)
     if isinstance(send_result, Err):
@@ -234,7 +234,7 @@ async def send_receive_2(request: Request):
         await stop_send()
 
         videosignal_2 = {
-            "Status": "Erfolgreich",
+            "Status": "pass",
             "Grund": "Kommunikation erfolgreich durchgeführt"
         }
 
@@ -277,7 +277,7 @@ async def start_scan(request: Request):
         print("error message:")
         print(f"{error_message}")
         can_status = {
-            "Status": "Fehlgeschlagen",
+            "Status": "fail",
             "Fehler": error_message,
             "Datum": datetime.now().strftime('%d.%m.%Y %H:%M:%S')
         }
@@ -315,7 +315,7 @@ async def start_scan(request: Request):
             if devices.is_err():
                 error_message1: str = devices.unwrap_err()
                 can_status = {
-                    "Status": "Fehlgeschlagen",
+                    "Status": "fail",
                     "device_filtering": "failed",
                     "Fehlermeldung": error_message1,
                     "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -332,7 +332,7 @@ async def start_scan(request: Request):
                 devices_report: List[Device] = devices.ok()
 
                 can_status = {
-                    "Status": "Erfolgreich",
+                    "Status": "pass",
                     "devices": devices.ok(),
                     "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
@@ -379,7 +379,7 @@ def filter_devices(devices: List[Device]) -> Result[List[Device], str]:
                 if found_device["serial_number"] == "380105787":
                     # Use global variable without annotation
                     pruefhilfsmittel = {
-                        "name": "Prüfhilfsmittel",
+                        "name": "Prüfmittel",
                         "port": found_device["port"]
 
                     }
@@ -432,7 +432,7 @@ async def vga_check(request: Request):
         result = scan_result.ok()
 
         vga_status = {
-            "Status": "Erfolgreich",
+            "Status": "pass",
             "Grund": result,
         }
 
@@ -446,7 +446,7 @@ async def vga_check(request: Request):
         err = scan_result.unwrap_err()
 
         vga_status = {
-            "Status": "Fehlgeschlagen",
+            "Status": "fail",
             "Grund": err,
         }
 
